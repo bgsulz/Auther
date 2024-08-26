@@ -53,22 +53,9 @@ class AutherApp extends StatelessWidget {
 }
 
 class AutherState extends ChangeNotifier {
-  static int refreshIntervalSeconds = 10;
+  static int refreshIntervalSeconds = 30;
 
-  List<Person> codes = [
-    Person(name: "Aunt Amy", personHash: "aaa"),
-    Person(name: "Aunt Amy", personHash: "bbb"),
-    Person(name: "Aunt Amy", personHash: "bbb"),
-    Person(name: "Aunt Amy", personHash: "bbb"),
-    Person(name: "Aunt Amy", personHash: "bbb"),
-    Person(name: "Aunt Amy", personHash: "bbb"),
-    Person(name: "Aunt Amy", personHash: "bbb"),
-    Person(name: "Aunt Amy", personHash: "bbb"),
-    Person(name: "Aunt Amy", personHash: "bbb"),
-    Person(name: "Aunt Amy", personHash: "bbb"),
-    Person(name: "Aunt Amy", personHash: "bbb"),
-    Person(name: "Aunt Amy", personHash: "bbb"),
-  ];
+  List<Person> codes = [];
   String userHash =
       "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08";
   int initialSeed = 0;
