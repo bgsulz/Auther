@@ -84,11 +84,11 @@ class SignupForm extends StatelessWidget {
             children: [
               _buildTextFormField(
                   _passphrase1Controller, _passphrase2Controller, 'Passphrase'),
-              SizedBox(height: 8),
+              SizedBox(height: 16),
               _buildTextFormField(_passphrase2Controller,
                   _passphrase1Controller, 'Passphrase (again)',
                   validationErrorKey: 'Passphrases do not match'),
-              SizedBox(height: 8),
+              SizedBox(height: 16),
               Align(
                 alignment: Alignment.centerRight,
                 child: ElevatedButton(

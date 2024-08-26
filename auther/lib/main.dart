@@ -1,11 +1,15 @@
 import 'dart:async';
 
-import 'package:auther/login.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import 'codes.dart';
 import 'style.dart';
+import 'splash.dart';
+import 'login.dart';
+import 'codes.dart';
+import 'qr.dart';
+import 'scanner.dart';
+import 'settings.dart';
 
 void main() {
   runApp(AutherApp());
@@ -35,9 +39,13 @@ class AutherApp extends StatelessWidget {
           ),
         ),
         routes: {
-          '/': (context) => LoginPage(),
+          '/': (context) => SplashScreen(),
+          '/intro': (context) => IntroPage(),
+          '/login': (context) => LoginPage(),
           '/codes': (context) => CodeListPage(),
-          // '/codes/settings': (context) => SettingsPage(),
+          '/codes/scan': (context) => CodeScanPage(),
+          '/codes/qr': (context) => QRCodePage(),
+          '/codes/settings': (context) => SettingsPage(),
         },
       ),
     );
@@ -45,46 +53,61 @@ class AutherApp extends StatelessWidget {
 }
 
 class AutherState extends ChangeNotifier {
+  static int refreshIntervalSeconds = 10;
+
   List<Person> codes = [
     Person(name: "Aunt Amy", personHash: "aaa"),
-    Person(name: "Uncle Rob", personHash: "bbb"),
-    Person(name: "Aunt Amy", personHash: "aaa"),
-    Person(name: "Uncle Rob", personHash: "bbb"),
-    Person(name: "Aunt Amy", personHash: "aaa"),
-    Person(name: "Uncle Rob", personHash: "bbb"),
-    Person(name: "Aunt Amy", personHash: "aaa"),
-    Person(name: "Uncle Rob", personHash: "bbb"),
+    Person(name: "Aunt Amy", personHash: "bbb"),
+    Person(name: "Aunt Amy", personHash: "bbb"),
+    Person(name: "Aunt Amy", personHash: "bbb"),
+    Person(name: "Aunt Amy", personHash: "bbb"),
+    Person(name: "Aunt Amy", personHash: "bbb"),
+    Person(name: "Aunt Amy", personHash: "bbb"),
+    Person(name: "Aunt Amy", personHash: "bbb"),
+    Person(name: "Aunt Amy", personHash: "bbb"),
+    Person(name: "Aunt Amy", personHash: "bbb"),
+    Person(name: "Aunt Amy", personHash: "bbb"),
+    Person(name: "Aunt Amy", personHash: "bbb"),
   ];
-  String userHash = "";
+  String userHash =
+      "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08";
   int initialSeed = 0;
   int offsetCount = 0;
+  int millisecondsNextRefresh = 0;
 
-  static int refreshIntervalSeconds = 1;
-
-  // ignore: unused_field
-  Timer? _timer;
+  Timer? timer;
 
   AutherState() {
     refresh();
   }
 
   void refresh() {
-    _timer?.cancel();
+    timer?.cancel();
     int nowMilliseconds = DateTime.now().millisecondsSinceEpoch;
     int timeUntilNextMultiple = (refreshIntervalSeconds * 1000) -
         (nowMilliseconds % (refreshIntervalSeconds * 1000));
     initialSeed = nowMilliseconds + timeUntilNextMultiple;
-    _timer = Timer(Duration(milliseconds: timeUntilNextMultiple), () {
+    timer = Timer(Duration(milliseconds: timeUntilNextMultiple), () {
       increment();
-      _timer =
+      timer =
           Timer.periodic(Duration(seconds: refreshIntervalSeconds), (timer) {
         increment();
       });
     });
+    notifyListeners();
+  }
+
+  int getMillisecondsUntilRefresh() {
+    return getSeed() - DateTime.now().millisecondsSinceEpoch;
+  }
+
+  double getProgress() {
+    return getMillisecondsUntilRefresh() / (refreshIntervalSeconds * 1000);
   }
 
   void addPerson(Person person) {
     codes.add(person);
+    print("ADDED PERSON: ${person.name}");
     notifyListeners();
   }
 
@@ -94,6 +117,6 @@ class AutherState extends ChangeNotifier {
   }
 
   int getSeed() {
-    return initialSeed + 1000 * offsetCount;
+    return initialSeed + (refreshIntervalSeconds * 1000 * offsetCount);
   }
 }
