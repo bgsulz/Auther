@@ -1,6 +1,9 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 
 import 'style.dart';
@@ -55,30 +58,29 @@ class AutherApp extends StatelessWidget {
 class AutherState extends ChangeNotifier {
   static int refreshIntervalSeconds = 30;
 
+  String userHash = "";
   List<Person> codes = [];
-  String userHash =
-      "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08";
+
+  Timer? timer;
   int initialSeed = 0;
   int offsetCount = 0;
   int millisecondsNextRefresh = 0;
 
-  Timer? timer;
-
   AutherState() {
-    refresh();
+    _startTimer();
   }
 
-  void refresh() {
+  void _startTimer() {
     timer?.cancel();
     int nowMilliseconds = DateTime.now().millisecondsSinceEpoch;
     int timeUntilNextMultiple = (refreshIntervalSeconds * 1000) -
         (nowMilliseconds % (refreshIntervalSeconds * 1000));
     initialSeed = nowMilliseconds + timeUntilNextMultiple;
     timer = Timer(Duration(milliseconds: timeUntilNextMultiple), () {
-      increment();
+      _increment();
       timer =
           Timer.periodic(Duration(seconds: refreshIntervalSeconds), (timer) {
-        increment();
+        _increment();
       });
     });
     notifyListeners();
@@ -94,16 +96,82 @@ class AutherState extends ChangeNotifier {
 
   void addPerson(Person person) {
     codes.add(person);
-    print("ADDED PERSON: ${person.name}");
+    codes.sort((a, b) => a.name.compareTo(b.name));
+    // print("ADDED PERSON: ${person.name}");
     notifyListeners();
+    _saveData();
   }
 
-  void increment() {
-    offsetCount++;
+  void removePersonAt(int index) {
+    codes.removeAt(index);
     notifyListeners();
+    _saveData();
+  }
+
+  void editPersonName(Person person, String text) {
+    final index = codes.indexOf(person);
+    if (index != -1) {
+      codes[index] = Person(name: text, personHash: person.personHash);
+      codes.sort((a, b) => a.name.compareTo(b.name));
+      notifyListeners();
+      _saveData();
+    }
+  }
+
+  void reset() {
+    userHash = '';
+    codes.clear();
+    notifyListeners();
+    _saveData();
+  }
+
+  void setUserHash(String hash) {
+    userHash = hash;
+    notifyListeners();
+    _saveData();
   }
 
   int getSeed() {
     return initialSeed + (refreshIntervalSeconds * 1000 * offsetCount);
+  }
+
+  void _increment() {
+    offsetCount++;
+    notifyListeners();
+  }
+
+  Future<void> _saveData() async {
+    print("Saving shortly...");
+    var data = {
+      'codes': codes.map((p) => p.toJson()).toList(),
+      'userHash': userHash
+    };
+    var json = jsonEncode(data);
+    print("Saving file: $json");
+    var file = await _dataFile;
+    await file.writeAsString(json);
+  }
+
+  Future<void> loadData() async {
+    print("Loading data.");
+    try {
+      var file = await _dataFile;
+      var json = await file.readAsString();
+      var data = jsonDecode(json);
+      codes =
+          (data['codes'] as List).map((json) => Person.fromJson(json)).toList();
+      userHash = data['userHash'];
+      print("Set userhash to $userHash.");
+    } on FileSystemException {
+      print("No data file found.");
+    } on Exception {
+      print("Error loading data:");
+      rethrow;
+    }
+  }
+
+  Future<File> get _dataFile async {
+    var dir = await getApplicationDocumentsDirectory();
+    return File('${dir.path}/data.json');
   }
 }

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'config.dart';
+import 'settings.dart';
 
 class LoginPage extends StatelessWidget {
   const LoginPage({super.key});
@@ -107,9 +108,9 @@ class SignupForm extends StatelessWidget {
     final appState = Provider.of<AutherState>(context, listen: false);
 
     if (_formKey.currentState!.validate()) {
-      appState.userHash =
-          AutherHash.hashPassphrase(_passphrase1Controller.value.text);
-      Navigator.pushNamed(context, "/codes");
+      var hash = AutherHash.hashPassphrase(_passphrase1Controller.value.text);
+      appState.setUserHash(hash);
+      Navigator.pushReplacementNamed(context, "/codes");
     }
   }
 }
@@ -135,6 +136,13 @@ class LoginForm extends StatelessWidget {
             validator: (value) => _validatePassphrase(appState, value),
             onFieldSubmitted: (value) => _onFieldSubmitted(context, value),
           ),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton(
+              onPressed: () => Settings.showResetModal(context),
+              child: Text('Forgot password?'),
+            ),
+          ),
         ],
       ),
     );
@@ -152,7 +160,7 @@ class LoginForm extends StatelessWidget {
 
   void _onFieldSubmitted(BuildContext context, String value) {
     if (_formKey.currentState!.validate()) {
-      Navigator.pushNamed(context, "/codes");
+      Navigator.pushReplacementNamed(context, "/codes");
     }
   }
 }

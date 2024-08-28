@@ -1,28 +1,38 @@
-import 'package:auther/config.dart';
+import 'package:auther/main.dart';
+import 'package:provider/provider.dart';
+
+import 'config.dart';
+
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SplashScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    SharedPreferences.getInstance().then((prefs) {
-      if (!prefs.containsKey("has_visited") ||
-          prefs.getBool("has_visited") == false) {
-        prefs.setBool("has_visited", true);
-        if (context.mounted) Navigator.pushNamed(context, "/intro");
-      } else {
-        if (context.mounted) Navigator.pushNamed(context, "/login");
-      }
-    });
+    final appState = Provider.of<AutherState>(context, listen: false);
+    _loadAndRedirect(context, appState);
 
     return Scaffold(
       body: Center(
-        child: Text(
-          "Auther",
-          style: Theme.of(context).textTheme.titleLarge,
-        ),
+        child: CircularProgressIndicator(),
       ),
     );
+  }
+
+  Future<void> _loadAndRedirect(
+      BuildContext context, AutherState appState) async {
+    await appState.loadData();
+    print("Loading shared prefs.");
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    print("All loaded.");
+
+    if (!prefs.containsKey("has_visited") ||
+        prefs.getBool("has_visited") == false) {
+      prefs.setBool("has_visited", true);
+      if (context.mounted) Navigator.pushReplacementNamed(context, "/intro");
+    } else {
+      if (context.mounted) Navigator.pushReplacementNamed(context, "/login");
+    }
   }
 }
 
@@ -32,7 +42,7 @@ class IntroPage extends StatelessWidget {
     return Scaffold(
       body: Center(
         child: Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(32),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[

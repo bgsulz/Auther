@@ -17,44 +17,42 @@ class SettingsPage extends StatelessWidget {
             subtitle: const Text("This will clear your entire list!"),
             trailing: Icon(Icons.clear),
             onTap: () {
-              _showClearPassphraseDialog(context);
+              Settings.showResetModal(context);
             },
           ),
         ],
       ),
     );
   }
+}
 
-  void _showClearPassphraseDialog(BuildContext context) {
+class Settings {
+  static void showResetModal(BuildContext context) {
+    final navigator = Navigator.of(context);
+    final appState = Provider.of<AutherState>(context, listen: false);
+
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Are you sure?'),
-          content: const Text(
-              'This will delete your saved passphrase and clear your list!'),
+          title: Text('Forgot password'),
+          content: Text(
+              "Resetting your password will delete all of your codewords. Are you sure you want to do this?"),
           actions: [
             TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-              },
-              child: const Text('Cancel'),
+              onPressed: () => navigator.pop(),
+              child: Text('No'),
             ),
             TextButton(
               onPressed: () {
-                _clearPassphrase(context);
-                Navigator.pushReplacementNamed(context, '/login');
+                appState.reset();
+                navigator.pushReplacementNamed("/login");
               },
-              child: const Text('Confirm'),
+              child: Text('Yes'),
             ),
           ],
         );
       },
     );
-  }
-
-  void _clearPassphrase(BuildContext context) {
-    final appState = Provider.of<AutherState>(context, listen: false);
-    appState.userHash = '';
   }
 }

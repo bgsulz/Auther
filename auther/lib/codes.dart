@@ -1,5 +1,5 @@
-import 'package:auther/hash.dart';
-import 'package:auther/main.dart';
+import 'hash.dart';
+import 'main.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -28,7 +28,7 @@ class CodeListPage extends StatelessWidget {
   Widget _buildBody(BuildContext context, AutherState appState) {
     return CustomScrollView(
       slivers: [
-        _buildAppBar(context),
+        _buildAppBar(context, appState),
         SliverToBoxAdapter(
           child: CountdownBar(),
         ),
@@ -37,7 +37,7 @@ class CodeListPage extends StatelessWidget {
     );
   }
 
-  Widget _buildAppBar(BuildContext context) {
+  Widget _buildAppBar(BuildContext context, AutherState appState) {
     return SliverAppBar(
       pinned: true,
       snap: false,
@@ -76,15 +76,110 @@ class CodeListPage extends StatelessWidget {
     return SliverList(
       delegate: SliverChildBuilderDelegate(
         (context, index) {
-          return PersonCard(
-            person: appState.codes[index],
-            seed: appState.getSeed(),
-            userHash: appState.userHash,
+          return Dismissible(
+            key: Key(appState.codes[index].name),
+            direction: DismissDirection.horizontal,
+            background: Container(
+              alignment: Alignment.centerLeft,
+              padding: const EdgeInsets.only(left: 16),
+              color: Colors.blue,
+              child: const Icon(
+                Icons.edit,
+                color: Colors.white,
+              ),
+            ),
+            confirmDismiss: (direction) async {
+              if (direction == DismissDirection.startToEnd) {
+                _showEditDialog(context, appState, index);
+                return false;
+              } else {
+                return await _showConfirmDeletionDialog(
+                    context, appState, index);
+              }
+            },
+            secondaryBackground: Container(
+              alignment: Alignment.centerRight,
+              padding: const EdgeInsets.only(right: 16),
+              color: Colors.red,
+              child: const Icon(
+                Icons.delete,
+                color: Colors.white,
+              ),
+            ),
+            child: PersonCard(
+              person: appState.codes[index],
+              seed: appState.getSeed(),
+              userHash: appState.userHash,
+            ),
           );
         },
         childCount: appState.codes.length,
       ),
     );
+  }
+
+  void _showEditDialog(BuildContext context, AutherState appState, int index) {
+    final appState = Provider.of<AutherState>(context, listen: false);
+    final person = appState.codes[index];
+    final nameController = TextEditingController(text: person.name);
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Edit name'),
+          content: TextField(
+            controller: nameController,
+            decoration: InputDecoration(
+              border: const OutlineInputBorder(),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                appState.editPersonName(person, nameController.text);
+                Navigator.of(context).pop();
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<bool> _showConfirmDeletionDialog(
+      BuildContext context, AutherState appState, int index) {
+    return showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Delete code'),
+          content: Text(
+              "Are you sure you want to delete ${appState.codes[index].name}'s codewords?"),
+          actions: [
+            TextButton(
+              child: const Text('No'),
+              onPressed: () {
+                Navigator.pop(context, false);
+              },
+            ),
+            TextButton(
+              child: const Text('Yes'),
+              onPressed: () {
+                Navigator.pop(context, true);
+              },
+            ),
+          ],
+        );
+      },
+    ).then((value) => value ?? false);
   }
 }
 
@@ -132,6 +227,12 @@ class CountdownBarState extends State<CountdownBar>
         );
       },
     );
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
   }
 }
 
@@ -217,4 +318,13 @@ class Person {
   String sayAuthCode(String userHash, int seed) {
     return AutherHash.getOTP(personHash, userHash, seed);
   }
+
+  Person.fromJson(Map<String, dynamic> json)
+      : name = json['name'] as String,
+        personHash = json['personHash'] as String;
+
+  Map<String, dynamic> toJson() => {
+        'name': name,
+        'personHash': personHash,
+      };
 }
