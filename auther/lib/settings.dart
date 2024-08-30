@@ -1,4 +1,6 @@
+import 'package:auther/main.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 class SettingsPage extends StatelessWidget {
   @override
@@ -11,30 +13,46 @@ class SettingsPage extends StatelessWidget {
       body: ListView(
         children: [
           ListTile(
-            title: const Text('Theme'),
-            subtitle: const Text('Change the color theme'),
-            trailing: Icon(Icons.color_lens),
-          ),
-          ListTile(
-            title: const Text('Autofill'),
-            subtitle: const Text('Automatically fill in login details'),
-            trailing: const Switch(
-              value: false,
-              onChanged: null,
-            ),
-          ),
-          ListTile(
-            title: const Text('Password management'),
-            subtitle: const Text('Manage saved passwords'),
-            trailing: Icon(Icons.vpn_key),
-          ),
-          ListTile(
-            title: const Text('Account management'),
-            subtitle: const Text('Manage your accounts'),
-            trailing: Icon(Icons.account_circle),
+            title: const Text('Clear passphrase'),
+            subtitle: const Text("This will clear your entire list!"),
+            trailing: Icon(Icons.clear),
+            onTap: () {
+              Settings.showResetModal(context);
+            },
           ),
         ],
       ),
+    );
+  }
+}
+
+class Settings {
+  static void showResetModal(BuildContext context) {
+    final navigator = Navigator.of(context);
+    final appState = Provider.of<AutherState>(context, listen: false);
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text('Forgot password'),
+          content: Text(
+              "Resetting your password will delete all of your codewords. Are you sure you want to do this?"),
+          actions: [
+            TextButton(
+              onPressed: () => navigator.pop(),
+              child: Text('No'),
+            ),
+            TextButton(
+              onPressed: () {
+                appState.reset();
+                navigator.pushReplacementNamed("/login");
+              },
+              child: Text('Yes'),
+            ),
+          ],
+        );
+      },
     );
   }
 }

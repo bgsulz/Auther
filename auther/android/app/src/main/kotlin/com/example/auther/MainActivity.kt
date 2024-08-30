@@ -1,4 +1,4 @@
-package com.example.auther
+package com.bgs.auther
 
 import io.flutter.embedding.android.FlutterActivity
 

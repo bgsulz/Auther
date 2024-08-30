@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'package:auther/words.dart';
 import 'package:crypto/crypto.dart';
-import 'package:otp/otp.dart';
 
 class AutherHash {
   static const int refreshIntervalSeconds = 30;
@@ -10,12 +9,19 @@ class AutherHash {
     return sha256.convert(Utf8Encoder().convert(value)).toString();
   }
 
-  static String getOTP(String myHash, String theirHash) {
-    var code = OTP.generateTOTPCode(myHash + theirHash, DateTime.now().millisecondsSinceEpoch,
-          interval: refreshIntervalSeconds,
-          length: 9)
-          .toString()
-          .padLeft(9, '0');
+  static String qrFromHash(String userHash) => "AutherCode_$userHash";
+  static String hashFromQr(String value) =>
+      value.replaceFirst("AutherCode_", "");
+
+  static bool isPlausibleQr(String value) => isPlausibleHash(hashFromQr(value));
+  static bool isPlausibleHash(String value) =>
+      value.length == 64 && RegExp(r'^[0-9a-f]+$').hasMatch(value);
+
+  static String getOTP(String myHash, String theirHash, int seed) {
+    var utf = Utf8Encoder().convert(myHash + theirHash + seed.toString());
+    var sha = sha256.convert(utf).toString();
+    var code =
+        BigInt.parse(sha, radix: 16).toString().padLeft(9, '0').substring(0, 9);
     var indices = [
       int.parse(code.substring(0, 3)),
       int.parse(code.substring(3, 6)),
@@ -23,14 +29,8 @@ class AutherHash {
     ];
     return indices.map((index) => Words.getWord(index)).join(' ');
   }
-  
-  static String getRef() => getOTP("ref", "ref");
-  static int getSecondsUntilChange() => OTP.remainingSeconds(interval: refreshIntervalSeconds);
-  static int getMillisUntilChange() => getSecondsUntilChange() * 1000;
-  static double getProgressUntilChange() => 1 - (AutherHash.getSecondsUntilChange() / AutherHash.refreshIntervalSeconds);
 
-  static bool compareCodewords(String truth, String entered)
-  {
+  static bool compareAuthcodes(String truth, String entered) {
     var truthNoWhitespace = truth.replaceAll(' ', '');
     var enteredNoWhitespace = entered.replaceAll(' ', '');
     return truthNoWhitespace.toLowerCase() == enteredNoWhitespace.toLowerCase();
