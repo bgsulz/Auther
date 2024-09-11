@@ -108,7 +108,7 @@ class SignupForm extends StatelessWidget {
     final appState = Provider.of<AutherState>(context, listen: false);
 
     if (_formKey.currentState!.validate()) {
-      var hash = AutherHash.hashPassphrase(_passphrase1Controller.value.text);
+      var hash = AutherHash.hashPassphrase(_passphrase1Controller.text);
       appState.setUserHash(hash);
       Navigator.pushReplacementNamed(context, "/codes");
     }
@@ -121,6 +121,7 @@ class LoginForm extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final appState = Provider.of<AutherState>(context, listen: false);
+    final formController = TextEditingController();
 
     return Form(
       key: _formKey,
@@ -132,16 +133,28 @@ class LoginForm extends StatelessWidget {
               labelText: 'Passphrase',
               helperText: 'Enter your passphrase here',
             ),
+            controller: formController,
             obscureText: true,
             validator: (value) => _validatePassphrase(appState, value),
             onFieldSubmitted: (value) => _onFieldSubmitted(context, value),
           ),
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton(
-              onPressed: () => Settings.showResetModal(context),
-              child: Text('Forgot password?'),
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              TextButton(
+                onPressed: () => Settings.showResetModal(context),
+                child: Text('Forgot password?'),
+              ),
+              SizedBox(width: 8),
+              ElevatedButton(
+                onPressed: () {
+                  if (_formKey.currentState!.validate()) {
+                    _onFieldSubmitted(context, formController.text);
+                  }
+                },
+                child: Text('Enter'),
+              ),
+            ],
           ),
         ],
       ),

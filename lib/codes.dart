@@ -122,16 +122,34 @@ class CodeListPage extends StatelessWidget {
     final appState = Provider.of<AutherState>(context, listen: false);
     final person = appState.codes[index];
     final nameController = TextEditingController(text: person.name);
+    final emergencyController = TextEditingController();
 
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Edit name'),
-          content: TextField(
-            controller: nameController,
-            decoration: InputDecoration(
-              border: const OutlineInputBorder(),
+          title: const Text('Options'),
+          content: SizedBox(
+            width: 400,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: nameController,
+                  decoration: InputDecoration(
+                    border: const OutlineInputBorder(),
+                    labelText: 'Edit name',
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: emergencyController,
+                  decoration: InputDecoration(
+                    border: OutlineInputBorder(),
+                    labelText: 'Enter person\'s passphrase (emergency)',
+                  ),
+                ),
+              ],
             ),
           ),
           actions: [
@@ -144,7 +162,19 @@ class CodeListPage extends StatelessWidget {
             TextButton(
               onPressed: () {
                 appState.editPersonName(person, nameController.text);
-                Navigator.of(context).pop();
+                if (emergencyController.text.isNotEmpty) {
+                  var isValid =
+                      appState.checkEmergency(person, emergencyController.text);
+                  if (!isValid) {
+                    // TODO: Change to a validated form -- no snackbar.
+                    ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Invalid passphrase')));
+                  } else {
+                    Navigator.of(context).pop();
+                  }
+                } else {
+                  Navigator.of(context).pop();
+                }
               },
               child: const Text('Save'),
             ),
@@ -288,12 +318,37 @@ class PersonCard extends StatelessWidget {
                 style: Theme.of(context).textTheme.bodyLarge,
               ),
               SizedBox(height: 8),
-              Row(
-                children: [
-                  _buildAuthCode(context, person, userHash, seed, true),
-                  _buildAuthCode(context, person, userHash, seed, false),
-                ],
-              ),
+              if (person._isBroken) ...[
+                SizedBox(
+                  height: 140,
+                  child: Row(
+                    children: [
+                      Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "Connection broken.",
+                            style: Theme.of(context).textTheme.displaySmall,
+                          ),
+                          SizedBox(height: 8),
+                          Text(
+                            "Rescan ${person.name}'s QR code.",
+                            style: Theme.of(context).textTheme.bodyLarge,
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                )
+              ] else ...[
+                Row(
+                  children: [
+                    _buildAuthCode(context, person, userHash, seed, true),
+                    _buildAuthCode(context, person, userHash, seed, false),
+                  ],
+                ),
+              ],
             ],
           ),
         ),
@@ -310,6 +365,8 @@ class Person {
 
   final String personHash;
   final String name;
+  bool _isBroken = false;
+  bool get isBroken => _isBroken;
 
   String hearAuthCode(String userHash, int seed) {
     return AutherHash.getOTP(userHash, personHash, seed);
@@ -321,10 +378,17 @@ class Person {
 
   Person.fromJson(Map<String, dynamic> json)
       : name = json['name'] as String,
-        personHash = json['personHash'] as String;
+        personHash = json['personHash'] as String,
+        _isBroken = json['isBroken'] as bool;
 
   Map<String, dynamic> toJson() => {
         'name': name,
         'personHash': personHash,
+        'isBroken': isBroken,
       };
+
+  void breakConnection() {
+    print("BREAKING CONNECTION FOR $name");
+    _isBroken = true;
+  }
 }

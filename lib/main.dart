@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:auther/hash.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
@@ -67,6 +69,23 @@ class AutherState extends ChangeNotifier {
   int millisecondsNextRefresh = 0;
 
   AutherState() {
+    if (kDebugMode) {
+      print("Filling codes with stock.");
+      codes = [
+        Person(name: "Zachary", personHash: AutherHash.hashPassphrase("1234")),
+        Person(name: "Samantha", personHash: AutherHash.hashPassphrase("5678")),
+        Person(name: "Elijah", personHash: AutherHash.hashPassphrase("9012")),
+        Person(name: "Lillian", personHash: AutherHash.hashPassphrase("3456")),
+        Person(name: "Logan", personHash: AutherHash.hashPassphrase("7890")),
+        Person(name: "Ava", personHash: AutherHash.hashPassphrase("2468")),
+        Person(name: "William", personHash: AutherHash.hashPassphrase("1357")),
+        Person(name: "Sophia", personHash: AutherHash.hashPassphrase("4680")),
+        Person(name: "Oliver", personHash: AutherHash.hashPassphrase("7531")),
+        Person(name: "Mia", personHash: AutherHash.hashPassphrase("8629")),
+      ];
+      notifyListeners();
+      // _saveData();
+    }
     _startTimer();
   }
 
@@ -118,6 +137,23 @@ class AutherState extends ChangeNotifier {
     }
   }
 
+  bool checkEmergency(Person person, String passphrase) {
+    var personHash = AutherHash.hashPassphrase(passphrase);
+    var isSame = personHash == person.personHash;
+    if (isSame) {
+      final index =
+          codes.indexWhere((curr) => curr.personHash == person.personHash);
+      if (index != -1) {
+        codes[index].breakConnection();
+        notifyListeners();
+        _saveData();
+      } else {
+        print("INDEX NOT FOUND");
+      }
+    }
+    return isSame;
+  }
+
   void reset() {
     userHash = '';
     codes.clear();
@@ -144,7 +180,7 @@ class AutherState extends ChangeNotifier {
     print("Saving shortly...");
     var data = {
       'codes': codes.map((p) => p.toJson()).toList(),
-      'userHash': userHash
+      'userHash': userHash,
     };
     var json = jsonEncode(data);
     print("Saving file: $json");
@@ -170,8 +206,15 @@ class AutherState extends ChangeNotifier {
     }
   }
 
+  static bool _clearData = true;
+
   Future<File> get _dataFile async {
     var dir = await getApplicationDocumentsDirectory();
-    return File('${dir.path}/data.json');
+    var file = File('${dir.path}/data.json');
+    if (_clearData) {
+      _clearData = false;
+      await file.delete();
+    }
+    return file;
   }
 }
