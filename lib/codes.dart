@@ -1,3 +1,5 @@
+import 'package:auther/auther_widgets/appbar.dart';
+
 import 'hash.dart';
 import 'main.dart';
 import 'package:flutter/material.dart';
@@ -28,56 +30,34 @@ class CodeListPage extends StatelessWidget {
   Widget _buildBody(BuildContext context, AutherState appState) {
     return CustomScrollView(
       slivers: [
-        _buildAppBar(context, appState),
-        SliverToBoxAdapter(
-          child: CountdownBar(),
-        ),
+        AutherAppBar(context: context, appState: appState),
         _buildList(appState),
       ],
     );
   }
 
-  Widget _buildAppBar(BuildContext context, AutherState appState) {
-    return SliverAppBar(
-      pinned: true,
-      snap: false,
-      floating: false,
-      expandedHeight: 200.0,
-      flexibleSpace: const FlexibleSpaceBar(
-        title: Text('Auther'),
-      ),
-      actions: [
-        // IconButton(
-        //   icon: const Icon(Icons.search),
-        //   tooltip: 'Search for a code',
-        //   onPressed: () {
-        //     // TODO: implement search
-        //   },
-        // ),
-        IconButton(
-          icon: const Icon(Icons.settings),
-          tooltip: 'Settings',
-          onPressed: () {
-            Navigator.pushNamed(context, '/codes/settings');
-          },
-        ),
-        IconButton(
-          icon: const Icon(Icons.qr_code),
-          tooltip: 'Show QR code',
-          onPressed: () {
-            Navigator.pushNamed(context, '/codes/qr');
-          },
-        ),
-      ],
-    );
-  }
-
   Widget _buildList(AutherState appState) {
+    var indices = <int>[];
+
+    var query = appState.searchController.text;
+    if (query.isEmpty) {
+      indices = List.generate(appState.codes.length, (index) => index);
+    } else {
+      indices = appState.codes
+          .asMap()
+          .entries
+          .where((element) => element.value.name
+              .toLowerCase()
+              .contains(query.toLowerCase().trim()))
+          .map((e) => e.key)
+          .toList();
+    }
+
     return SliverList(
       delegate: SliverChildBuilderDelegate(
         (context, index) {
           return Dismissible(
-            key: Key(appState.codes[index].name),
+            key: Key(appState.codes[indices[index]].name),
             direction: DismissDirection.horizontal,
             background: Container(
               alignment: Alignment.centerLeft,
@@ -107,13 +87,13 @@ class CodeListPage extends StatelessWidget {
               ),
             ),
             child: PersonCard(
-              person: appState.codes[index],
+              person: appState.codes[indices[index]],
               seed: appState.getSeed(),
               userHash: appState.userHash,
             ),
           );
         },
-        childCount: appState.codes.length,
+        childCount: indices.length,
       ),
     );
   }
@@ -210,59 +190,6 @@ class CodeListPage extends StatelessWidget {
         );
       },
     ).then((value) => value ?? false);
-  }
-}
-
-class CountdownBar extends StatefulWidget {
-  const CountdownBar({
-    super.key,
-  });
-
-  @override
-  CountdownBarState createState() => CountdownBarState();
-}
-
-class CountdownBarState extends State<CountdownBar>
-    with TickerProviderStateMixin {
-  late AnimationController _animationController;
-
-  late AutherState appState;
-
-  @override
-  void initState() {
-    super.initState();
-    appState = Provider.of<AutherState>(context, listen: false);
-    _animationController = AnimationController(
-        vsync: this,
-        duration: Duration(seconds: AutherState.refreshIntervalSeconds),
-        upperBound: 1,
-        lowerBound: 0,
-        reverseDuration:
-            Duration(milliseconds: AutherState.refreshIntervalSeconds * 1000),
-        value: appState.getProgress());
-    _animationController.reverse();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _animationController,
-      builder: (context, child) {
-        if (_animationController.value <= 0) {
-          _animationController.value = appState.getProgress();
-          _animationController.reverse();
-        }
-        return LinearProgressIndicator(
-          value: _animationController.value,
-        );
-      },
-    );
-  }
-
-  @override
-  void dispose() {
-    _animationController.dispose();
-    super.dispose();
   }
 }
 

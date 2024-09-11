@@ -60,6 +60,8 @@ class AutherApp extends StatelessWidget {
 class AutherState extends ChangeNotifier {
   static int refreshIntervalSeconds = 30;
 
+  final searchController = TextEditingController();
+
   String userHash = "";
   List<Person> codes = [];
 
@@ -173,6 +175,10 @@ class AutherState extends ChangeNotifier {
 
   void _increment() {
     offsetCount++;
+    notifyListeners();
+  }
+
+  void editSearch() {
     notifyListeners();
   }
 
