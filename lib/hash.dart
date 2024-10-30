@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'package:auther/customization/words.dart';
+import '../customization/words.dart';
 import 'package:crypto/crypto.dart';
 
 class AutherHash {
@@ -27,7 +27,7 @@ class AutherHash {
       int.parse(code.substring(3, 6)),
       int.parse(code.substring(6))
     ];
-    return indices.map((index) => Words.getWord(index)).join(' ');
+    return indices.map((index) => Words.wordAt(index)).join(' ');
   }
 
   static bool compareAuthcodes(String truth, String entered) {

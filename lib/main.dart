@@ -1,5 +1,4 @@
-import 'package:auther/secure.dart';
-import 'package:auther/state.dart';
+import '../state.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -10,8 +9,6 @@ import 'auther_widgets/codes.dart';
 import 'screens/qr.dart';
 import 'screens/scanner.dart';
 import 'screens/settings.dart';
-
-final storage = SecureStorageService();
 
 void main() {
   runApp(AutherApp());
@@ -29,15 +26,15 @@ class AutherApp extends StatelessWidget {
         theme: ThemeData(
           brightness: Brightness.dark,
           textTheme: TextTheme(
-            displayLarge: Style.serif(),
-            displayMedium: Style.serif(),
-            displaySmall: Style.serif(),
-            headlineLarge: Style.serif(),
-            headlineMedium: Style.serif(),
-            headlineSmall: Style.serif(),
-            titleLarge: Style.serif(),
-            titleMedium: Style.serif(),
-            titleSmall: Style.serif(),
+            displayLarge: Style.serif,
+            displayMedium: Style.serif,
+            displaySmall: Style.serif,
+            headlineLarge: Style.serif,
+            headlineMedium: Style.serif,
+            headlineSmall: Style.serif,
+            titleLarge: Style.serif,
+            titleMedium: Style.serif,
+            titleSmall: Style.serif,
           ),
         ),
         routes: {

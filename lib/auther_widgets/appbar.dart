@@ -1,5 +1,5 @@
-import 'package:auther/auther_widgets/countdown.dart';
-import 'package:auther/state.dart';
+import '../auther_widgets/countdown.dart';
+import '../state.dart';
 import 'package:flutter/material.dart';
 
 class AutherAppBar extends StatefulWidget {
@@ -43,7 +43,7 @@ class _AutherAppBarState extends State<AutherAppBar> {
       SizedBox(width: 16),
       Expanded(
         child: TextField(
-          onChanged: (value) => widget.appState.editSearch(),
+          onChanged: (value) => widget.appState.notifyManual(),
           controller: widget.appState.searchController,
           decoration: InputDecoration(
             border: OutlineInputBorder(),

@@ -1,18 +1,18 @@
-import 'package:auther/hash.dart';
-import 'package:auther/state.dart';
+import 'package:auther/customization/style.dart';
+
+import 'settings.dart';
+import '../hash.dart';
+import '../state.dart';
+import '../customization/config.dart';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
-import '../customization/config.dart';
-import 'settings.dart';
 
 class LoginPage extends StatelessWidget {
   const LoginPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final appState = Provider.of<AutherState>(context, listen: false);
-
     return Scaffold(
       body: Center(
         child: Padding(
@@ -21,13 +21,13 @@ class LoginPage extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Auther',
-                  style: Theme.of(context)
-                      .textTheme
-                      .headlineLarge!
-                      .copyWith(fontSize: 64)),
+              Style.autherTitle(context),
               SizedBox(height: 16),
-              appState.userHash.isEmpty ? SignupForm() : LoginForm(),
+              Consumer<AutherState>(
+                builder: (context, appState, child) {
+                  return appState.userHash.isEmpty ? SignupForm() : LoginForm();
+                },
+              ),
             ],
           ),
         ),
@@ -39,35 +39,8 @@ class LoginPage extends StatelessWidget {
 class SignupForm extends StatelessWidget {
   final _formKey = GlobalKey<FormState>();
 
-  final _passphrase1Controller = TextEditingController();
-  final _passphrase2Controller = TextEditingController();
-
-  TextFormField _buildTextFormField(TextEditingController controller,
-      TextEditingController other, String labelText,
-      {String? validationErrorKey}) {
-    String? Function(dynamic value)? validator;
-    if (validationErrorKey == null) {
-      validator = null;
-    } else {
-      validator = (value) {
-        if (value.toString().isEmpty ||
-            other.text.isEmpty ||
-            value != other.text) {
-          return validationErrorKey;
-        }
-        return null;
-      };
-    }
-
-    return TextFormField(
-        controller: controller,
-        decoration: InputDecoration(
-          border: const OutlineInputBorder(),
-          labelText: labelText,
-        ),
-        obscureText: true,
-        validator: validator);
-  }
+  final _controllerFirst = TextEditingController();
+  final _controllerSecond = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
@@ -83,12 +56,18 @@ class SignupForm extends StatelessWidget {
           key: _formKey,
           child: Column(
             children: [
-              _buildTextFormField(
-                  _passphrase1Controller, _passphrase2Controller, 'Passphrase'),
+              SignupTextField(
+                _controllerFirst,
+                _controllerSecond,
+                'Passphrase',
+              ),
               SizedBox(height: 16),
-              _buildTextFormField(_passphrase2Controller,
-                  _passphrase1Controller, 'Passphrase (again)',
-                  validationErrorKey: 'Passphrases do not match'),
+              SignupTextField(
+                _controllerSecond,
+                _controllerFirst,
+                'Passphrase (again)',
+                validationErrorKey: 'Passphrases do not match',
+              ),
               SizedBox(height: 16),
               Align(
                 alignment: Alignment.centerRight,
@@ -108,10 +87,52 @@ class SignupForm extends StatelessWidget {
     final appState = Provider.of<AutherState>(context, listen: false);
 
     if (_formKey.currentState!.validate()) {
-      var hash = AutherHash.hashPassphrase(_passphrase1Controller.text);
-      appState.setUserHash(hash);
+      var hash = AutherHash.hashPassphrase(_controllerFirst.text);
+      appState.userHash = hash;
       Navigator.pushReplacementNamed(context, "/codes");
     }
+  }
+}
+
+class SignupTextField extends StatelessWidget {
+  SignupTextField(
+    this.selfController,
+    this.compareController,
+    this.labelText, {
+    this.validationErrorKey,
+  });
+
+  final TextEditingController selfController;
+  final TextEditingController compareController;
+  final String labelText;
+  final String? validationErrorKey;
+
+  @override
+  Widget build(BuildContext context) {
+    FormFieldValidator<String>? validator;
+
+    if (validationErrorKey == null) {
+      validator = null;
+    } else {
+      validator = (value) {
+        if (value.toString().isEmpty ||
+            compareController.text.isEmpty ||
+            value != compareController.text) {
+          return validationErrorKey;
+        }
+        return null;
+      };
+    }
+
+    return TextFormField(
+      controller: selfController,
+      decoration: InputDecoration(
+        border: const OutlineInputBorder(),
+        labelText: labelText,
+      ),
+      obscureText: true,
+      validator: validator,
+    );
   }
 }
 
@@ -136,7 +157,7 @@ class LoginForm extends StatelessWidget {
             controller: formController,
             obscureText: true,
             validator: (value) => _validatePassphrase(appState, value),
-            onFieldSubmitted: (value) => _onFieldSubmitted(context, value),
+            onFieldSubmitted: (value) => _onFieldSubmitted(context),
           ),
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
@@ -147,11 +168,7 @@ class LoginForm extends StatelessWidget {
               ),
               SizedBox(width: 8),
               ElevatedButton(
-                onPressed: () {
-                  if (_formKey.currentState!.validate()) {
-                    _onFieldSubmitted(context, formController.text);
-                  }
-                },
+                onPressed: () => _onFieldSubmitted(context),
                 child: Text('Enter'),
               ),
             ],
@@ -171,7 +188,7 @@ class LoginForm extends StatelessWidget {
     }
   }
 
-  void _onFieldSubmitted(BuildContext context, String value) {
+  void _onFieldSubmitted(BuildContext context) {
     if (_formKey.currentState!.validate()) {
       Navigator.pushReplacementNamed(context, "/codes");
     }

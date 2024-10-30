@@ -1002,5 +1002,5 @@ class Words {
     'toward'
   ];
 
-  static String getWord(int index) => words[index];
+  static String wordAt(int index) => words[index];
 }

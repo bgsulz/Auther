@@ -1,4 +1,5 @@
-import 'package:auther/state.dart';
+import '../customization/config.dart';
+import '../state.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -14,7 +15,6 @@ class CountdownBar extends StatefulWidget {
 class CountdownBarState extends State<CountdownBar>
     with TickerProviderStateMixin {
   late AnimationController _animationController;
-
   late AutherState appState;
 
   @override
@@ -23,12 +23,11 @@ class CountdownBarState extends State<CountdownBar>
     appState = Provider.of<AutherState>(context, listen: false);
     _animationController = AnimationController(
         vsync: this,
-        duration: Duration(seconds: AutherState.refreshIntervalSeconds),
+        duration: Duration(seconds: Config.intervalSec),
         upperBound: 1,
         lowerBound: 0,
-        reverseDuration:
-            Duration(milliseconds: AutherState.refreshIntervalSeconds * 1000),
-        value: appState.getProgress());
+        reverseDuration: Duration(milliseconds: Config.intervalSec * 1000),
+        value: appState.progress);
     _animationController.reverse();
   }
 
@@ -38,7 +37,7 @@ class CountdownBarState extends State<CountdownBar>
       animation: _animationController,
       builder: (context, child) {
         if (_animationController.value <= 0) {
-          _animationController.value = appState.getProgress();
+          _animationController.value = appState.progress;
           _animationController.reverse();
         }
         return LinearProgressIndicator(

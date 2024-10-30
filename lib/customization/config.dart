@@ -1,4 +1,9 @@
 class Config {
+  static const int intervalSec = 30;
+  static const int intervalMillis = intervalSec * 1000;
+
+  static const String autherName = 'Auther';
+
   static const String autherSubtitle =
       "Auther is a codeword generator to protect against identity cloning scams.";
 
@@ -12,4 +17,6 @@ class Config {
 
   static const String passphraseGuidelines =
       "Choose something easy to remember and hard to guess.";
+
+  static const String passphraseKey = 'passphrase';
 }

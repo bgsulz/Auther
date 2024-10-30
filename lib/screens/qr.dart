@@ -1,5 +1,5 @@
-import 'package:auther/hash.dart';
-import 'package:auther/state.dart';
+import '../hash.dart';
+import '../state.dart';
 import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:flutter/material.dart';

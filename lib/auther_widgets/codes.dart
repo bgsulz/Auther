@@ -1,5 +1,5 @@
-import 'package:auther/auther_widgets/appbar.dart';
-import 'package:auther/state.dart';
+import '../auther_widgets/appbar.dart';
+import '../state.dart';
 
 import '../hash.dart';
 import 'package:flutter/material.dart';
@@ -92,7 +92,7 @@ class CodeListPage extends StatelessWidget {
             ),
             child: PersonCard(
               person: appState.codes[indices[index]],
-              seed: appState.getSeed(),
+              seed: appState.seed,
               userHash: appState.userHash,
             ),
           );

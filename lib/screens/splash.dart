@@ -1,4 +1,4 @@
-import 'package:auther/state.dart';
+import '../state.dart';
 import 'package:provider/provider.dart';
 
 import '../customization/config.dart';
@@ -21,11 +21,8 @@ class SplashScreen extends StatelessWidget {
 
   Future<void> _loadAndRedirect(
       BuildContext context, AutherState appState) async {
-    await appState.loadData();
-    print("Loading shared prefs.");
+    await appState.init();
     final SharedPreferences prefs = await SharedPreferences.getInstance();
-    print("All loaded.");
-
     if (!prefs.containsKey("has_visited") ||
         prefs.getBool("has_visited") == false) {
       prefs.setBool("has_visited", true);
