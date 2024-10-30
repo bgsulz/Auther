@@ -1,7 +1,7 @@
 import 'package:auther/auther_widgets/appbar.dart';
+import 'package:auther/state.dart';
 
-import 'hash.dart';
-import 'main.dart';
+import '../hash.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -77,6 +77,10 @@ class CodeListPage extends StatelessWidget {
                     context, appState, index);
               }
             },
+            onDismissed: (dir) {
+              var state = Provider.of<AutherState>(context, listen: false);
+              state.removePersonAt(index);
+            },
             secondaryBackground: Container(
               alignment: Alignment.centerRight,
               padding: const EdgeInsets.only(right: 16),
@@ -126,7 +130,7 @@ class CodeListPage extends StatelessWidget {
                   controller: emergencyController,
                   decoration: InputDecoration(
                     border: OutlineInputBorder(),
-                    labelText: 'Enter person\'s passphrase (emergency)',
+                    labelText: 'Enter ${person.name}\'s passphrase (emergency)',
                   ),
                 ),
               ],

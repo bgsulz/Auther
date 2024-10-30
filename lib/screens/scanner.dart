@@ -1,6 +1,6 @@
-import 'package:auther/codes.dart';
+import 'package:auther/auther_widgets/codes.dart';
 import 'package:auther/hash.dart';
-import 'package:auther/main.dart';
+import 'package:auther/state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';

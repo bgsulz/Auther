@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'package:auther/words.dart';
+import 'package:auther/customization/words.dart';
 import 'package:crypto/crypto.dart';
 
 class AutherHash {

@@ -1,9 +1,9 @@
 import 'package:auther/hash.dart';
-import 'package:auther/main.dart';
+import 'package:auther/state.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import 'config.dart';
+import '../customization/config.dart';
 import 'settings.dart';
 
 class LoginPage extends StatelessWidget {

@@ -1,5 +1,5 @@
 import 'package:auther/auther_widgets/countdown.dart';
-import 'package:auther/main.dart';
+import 'package:auther/state.dart';
 import 'package:flutter/material.dart';
 
 class AutherAppBar extends StatefulWidget {
