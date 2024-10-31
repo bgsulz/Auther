@@ -25,28 +25,22 @@ class AutherApp extends StatelessWidget {
         title: 'Auther',
         theme: ThemeData(
           brightness: Brightness.dark,
-          textTheme: TextTheme(
-            displayLarge: Style.serif,
-            displayMedium: Style.serif,
-            displaySmall: Style.serif,
-            headlineLarge: Style.serif,
-            headlineMedium: Style.serif,
-            headlineSmall: Style.serif,
-            titleLarge: Style.serif,
-            titleMedium: Style.serif,
-            titleSmall: Style.serif,
-          ),
+          textTheme: Style.textTheme,
         ),
-        routes: {
-          '/': (context) => SplashScreen(),
-          '/intro': (context) => IntroPage(),
-          '/login': (context) => LoginPage(),
-          '/codes': (context) => CodeListPage(),
-          '/codes/scan': (context) => CodeScanPage(),
-          '/codes/qr': (context) => QRCodePage(),
-          '/codes/settings': (context) => SettingsPage(),
-        },
+        routes: routes,
       ),
     );
+  }
+
+  Map<String, WidgetBuilder> get routes {
+    return {
+      '/': (context) => SplashScreen(),
+      '/intro': (context) => IntroPage(),
+      '/login': (context) => LoginPage(),
+      '/codes': (context) => CodeListPage(),
+      '/codes/scan': (context) => CodeScanPage(),
+      '/codes/qr': (context) => QRCodePage(),
+      '/codes/settings': (context) => SettingsPage(),
+    };
   }
 }
