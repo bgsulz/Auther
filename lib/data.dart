@@ -13,7 +13,7 @@ class AutherData {
 
   AutherData({
     this.userHash = '',
-    this.codes = const [],
+    required this.codes,
   });
 
   factory AutherData.fromJson(Map<String, dynamic> json, String hash) {

@@ -14,7 +14,7 @@ import 'package:path_provider/path_provider.dart';
 class AutherState extends ChangeNotifier {
   final searchController = TextEditingController();
 
-  AutherData _data = AutherData();
+  AutherData _data = AutherData(codes: []);
   String get dataJson => _data.toJsonString();
 
   AutherTimer _timer = AutherTimer();
@@ -46,11 +46,15 @@ class AutherState extends ChangeNotifier {
   }
 
   Future<void> init([File? file]) async {
-    file ??= await _dataFile;
+    var workingFile = file ?? await _dataFile;
     try {
-      var data = jsonDecode(await file.readAsString());
+      var data = jsonDecode(await workingFile.readAsString());
       var hash = await storage.getPassphrase() ?? "";
-      data = AutherData.fromJson(data, hash);
+      _data = AutherData.fromJson(data, hash);
+      if (file == null) {
+        await _saveData();
+      }
+      notifyListeners();
     } on Exception {
       rethrow;
     }
@@ -71,13 +75,13 @@ class AutherState extends ChangeNotifier {
   }
 
   void addPerson(Person person) {
-    codes.add(person);
-    codes.sort((a, b) => a.name.compareTo(b.name));
+    _data.codes.add(person);
+    _data.codes.sort((a, b) => a.name.compareTo(b.name));
     update();
   }
 
   void removePersonAt(int index) {
-    codes.removeAt(index);
+    _data.codes.removeAt(index);
     update();
   }
 

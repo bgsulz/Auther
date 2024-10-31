@@ -1,8 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
-
 import 'package:file_picker/file_picker.dart';
-import 'package:file_saver/file_saver.dart';
 
 import '../auther_widgets/codes.dart';
 import '../auth.dart';
@@ -34,7 +32,7 @@ class SettingsPage extends StatelessWidget {
   ListTile _buildSamplePeopleListTile(BuildContext context) {
     return ListTile(
       title: const Text('Add sample persons'),
-      trailing: Icon(Icons.person_add),
+      leading: Icon(Icons.person_add),
       onTap: () {
         Settings.addSamplePersons(context);
         ScaffoldMessenger.of(context).showSnackBar(
@@ -50,7 +48,7 @@ class SettingsPage extends StatelessWidget {
     return ListTile(
       title: const Text('Clear passphrase'),
       subtitle: const Text("This will clear your entire list!"),
-      trailing: Icon(Icons.clear),
+      leading: Icon(Icons.delete_forever),
       onTap: () {
         Settings.showResetModal(context);
       },
@@ -59,6 +57,7 @@ class SettingsPage extends StatelessWidget {
 
   ListTile _buildExportTile(BuildContext context) {
     return ListTile(
+      leading: Icon(Icons.upload),
       title: const Text('Export registered persons'),
       onTap: () {
         Settings.export(context);
@@ -68,6 +67,7 @@ class SettingsPage extends StatelessWidget {
 
   ListTile _buildImportTile(BuildContext context) {
     return ListTile(
+      leading: Icon(Icons.download),
       title: const Text('Import registered persons'),
       onTap: () {
         Settings.import(context);
@@ -139,15 +139,22 @@ class Settings {
   static Future<void> export(BuildContext context) async {
     final appState = Provider.of<AutherState>(context, listen: false);
 
-    await FileSaver.instance.saveFile(
-      name: 'auther_data_${_generateTimecode()}.json',
-      bytes: utf8.encode(appState.dataJson),
-    );
+    var filename = 'auther_data_${_generateTimecode()}.json';
+    var file = await FilePicker.platform.saveFile(
+        dialogTitle: 'Save Auther data',
+        fileName: filename,
+        bytes: utf8.encode(appState.dataJson));
 
     if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Auther data exported successfully!')),
-      );
+      if (file == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Auther export canceled')),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Auther data exported successfully!')),
+        );
+      }
     }
   }
 
@@ -159,7 +166,7 @@ class Settings {
       File file = File(result.files.single.path!);
       await appState.init(file);
       if (context.mounted) {
-        Navigator.of(context).pushReplacementNamed('/');
+        Navigator.of(context).pushReplacementNamed('/codes');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Auther data successfully imported!')),
         );
