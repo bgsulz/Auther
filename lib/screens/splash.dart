@@ -9,18 +9,24 @@ import 'package:shared_preferences/shared_preferences.dart';
 class SplashScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    final appState = Provider.of<AutherState>(context, listen: false);
-    _loadAndRedirect(context, appState);
-
-    return Scaffold(
-      body: Center(
-        child: CircularProgressIndicator(),
-      ),
+    return FutureBuilder(
+      future: _loadAndRedirect(context),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.done) {
+          return SizedBox.shrink(); // Placeholder, as navigation will occur
+        } else {
+          return Scaffold(
+            body: Center(
+              child: CircularProgressIndicator(),
+            ),
+          );
+        }
+      },
     );
   }
 
-  Future<void> _loadAndRedirect(
-      BuildContext context, AutherState appState) async {
+  Future<void> _loadAndRedirect(BuildContext context) async {
+    final appState = Provider.of<AutherState>(context, listen: false);
     await appState.init();
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     if (!prefs.containsKey("has_visited") ||

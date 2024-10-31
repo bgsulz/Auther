@@ -2,7 +2,7 @@ import 'dart:convert';
 import '../customization/words.dart';
 import 'package:crypto/crypto.dart';
 
-class AutherHash {
+class AutherAuth {
   static const int refreshIntervalSeconds = 30;
 
   static String hashPassphrase(String value) {

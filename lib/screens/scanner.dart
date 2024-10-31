@@ -1,5 +1,5 @@
 import '../auther_widgets/codes.dart';
-import '../hash.dart';
+import '../auth.dart';
 import '../state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -25,9 +25,9 @@ class _CodeScanPageState extends State<CodeScanPage> {
 
     var qr = found.displayValue;
     if (qr == null) return;
-    if (!AutherHash.isPlausibleQr(qr)) return;
+    if (!AutherAuth.isPlausibleQr(qr)) return;
 
-    var hash = AutherHash.hashFromQr(qr);
+    var hash = AutherAuth.hashFromQr(qr);
 
     HapticFeedback.vibrate();
 

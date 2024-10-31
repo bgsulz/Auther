@@ -1,7 +1,7 @@
 import '../auther_widgets/appbar.dart';
 import '../state.dart';
 
-import '../hash.dart';
+import '../auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -37,27 +37,11 @@ class CodeListPage extends StatelessWidget {
   }
 
   Widget _buildList(AutherState appState) {
-    var indices = <int>[];
-
-    var query = appState.searchController.text;
-    if (query.isEmpty) {
-      indices = List.generate(appState.codes.length, (index) => index);
-    } else {
-      indices = appState.codes
-          .asMap()
-          .entries
-          .where((element) => element.value.name
-              .toLowerCase()
-              .contains(query.toLowerCase().trim()))
-          .map((e) => e.key)
-          .toList();
-    }
-
     return SliverList(
       delegate: SliverChildBuilderDelegate(
         (context, index) {
           return Dismissible(
-            key: Key(appState.codes[indices[index]].name),
+            key: Key(appState.visibleCodes[index].name),
             direction: DismissDirection.horizontal,
             background: Container(
               alignment: Alignment.centerLeft,
@@ -91,13 +75,13 @@ class CodeListPage extends StatelessWidget {
               ),
             ),
             child: PersonCard(
-              person: appState.codes[indices[index]],
+              person: appState.visibleCodes[index],
               seed: appState.seed,
               userHash: appState.userHash,
             ),
           );
         },
-        childCount: indices.length,
+        childCount: appState.visibleCodes.length,
       ),
     );
   }
@@ -300,11 +284,11 @@ class Person {
   bool get isBroken => _isBroken;
 
   String hearAuthCode(String userHash, int seed) {
-    return AutherHash.getOTP(userHash, personHash, seed);
+    return AutherAuth.getOTP(userHash, personHash, seed);
   }
 
   String sayAuthCode(String userHash, int seed) {
-    return AutherHash.getOTP(personHash, userHash, seed);
+    return AutherAuth.getOTP(personHash, userHash, seed);
   }
 
   Person.fromJson(Map<String, dynamic> json)

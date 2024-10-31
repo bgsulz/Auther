@@ -1,7 +1,7 @@
 import 'package:auther/customization/style.dart';
 
 import 'settings.dart';
-import '../hash.dart';
+import '../auth.dart';
 import '../state.dart';
 import '../customization/config.dart';
 
@@ -87,7 +87,7 @@ class SignupForm extends StatelessWidget {
     final appState = Provider.of<AutherState>(context, listen: false);
 
     if (_formKey.currentState!.validate()) {
-      var hash = AutherHash.hashPassphrase(_controllerFirst.text);
+      var hash = AutherAuth.hashPassphrase(_controllerFirst.text);
       appState.userHash = hash;
       Navigator.pushReplacementNamed(context, "/codes");
     }
@@ -181,7 +181,7 @@ class LoginForm extends StatelessWidget {
   String? _validatePassphrase(AutherState appState, String? value) {
     if (value == null ||
         value.isEmpty ||
-        AutherHash.hashPassphrase(value) != appState.userHash) {
+        AutherAuth.hashPassphrase(value) != appState.userHash) {
       return 'Invalid passphrase';
     } else {
       return null;

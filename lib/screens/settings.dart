@@ -5,7 +5,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:file_saver/file_saver.dart';
 
 import '../auther_widgets/codes.dart';
-import '../hash.dart';
+import '../auth.dart';
 import '../state.dart';
 
 import 'package:flutter/foundation.dart';
@@ -109,16 +109,16 @@ class Settings {
     final appState = Provider.of<AutherState>(context, listen: false);
 
     var codes = [
-      Person(name: "Zachary", personHash: AutherHash.hashPassphrase("1234")),
-      Person(name: "Samantha", personHash: AutherHash.hashPassphrase("5678")),
-      Person(name: "Elijah", personHash: AutherHash.hashPassphrase("9012")),
-      Person(name: "Lillian", personHash: AutherHash.hashPassphrase("3456")),
-      Person(name: "Logan", personHash: AutherHash.hashPassphrase("7890")),
-      Person(name: "Ava", personHash: AutherHash.hashPassphrase("2468")),
-      Person(name: "William", personHash: AutherHash.hashPassphrase("1357")),
-      Person(name: "Sophia", personHash: AutherHash.hashPassphrase("4680")),
-      Person(name: "Oliver", personHash: AutherHash.hashPassphrase("7531")),
-      Person(name: "Mia", personHash: AutherHash.hashPassphrase("8629")),
+      Person(name: "Zachary", personHash: AutherAuth.hashPassphrase("1234")),
+      Person(name: "Samantha", personHash: AutherAuth.hashPassphrase("5678")),
+      Person(name: "Elijah", personHash: AutherAuth.hashPassphrase("9012")),
+      Person(name: "Lillian", personHash: AutherAuth.hashPassphrase("3456")),
+      Person(name: "Logan", personHash: AutherAuth.hashPassphrase("7890")),
+      Person(name: "Ava", personHash: AutherAuth.hashPassphrase("2468")),
+      Person(name: "William", personHash: AutherAuth.hashPassphrase("1357")),
+      Person(name: "Sophia", personHash: AutherAuth.hashPassphrase("4680")),
+      Person(name: "Oliver", personHash: AutherAuth.hashPassphrase("7531")),
+      Person(name: "Mia", personHash: AutherAuth.hashPassphrase("8629")),
     ];
 
     while (appState.codes.isNotEmpty) {
@@ -158,8 +158,13 @@ class Settings {
     if (result != null) {
       File file = File(result.files.single.path!);
       await appState.init(file);
+      if (context.mounted) {
+        Navigator.of(context).pushReplacementNamed('/');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Auther data successfully imported!')),
+        );
+      }
     } else if (context.mounted) {
-      Navigator.of(context).pushReplacementNamed('/');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Auther data import canceled')),
       );

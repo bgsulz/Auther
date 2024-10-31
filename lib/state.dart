@@ -2,7 +2,7 @@ import 'package:auther/data.dart';
 
 import '../customization/config.dart';
 import '../auther_widgets/codes.dart';
-import '../hash.dart';
+import 'auth.dart';
 import '../secure.dart';
 
 import 'dart:async';
@@ -27,20 +27,16 @@ class AutherState extends ChangeNotifier {
   }
 
   List<Person> get codes => _data.codes;
+  List<Person> get visibleCodes => _data.getVisibleCodes(searchController.text);
 
   AutherState() {
     _timer.start(this);
     notifyListeners();
   }
 
-  // Manual toggle for debugging
-  static const bool _clearData = false;
   Future<File> get _dataFile async {
     var dir = await getApplicationDocumentsDirectory();
     var file = File('${dir.path}/data.json');
-    if (_clearData) {
-      await file.delete();
-    }
     return file;
   }
 
@@ -95,7 +91,7 @@ class AutherState extends ChangeNotifier {
   }
 
   bool checkEmergency(Person person, String passphrase) {
-    var personHash = AutherHash.hashPassphrase(passphrase);
+    var personHash = AutherAuth.hashPassphrase(passphrase);
     var isSame = personHash == person.personHash;
     if (isSame) {
       final index =

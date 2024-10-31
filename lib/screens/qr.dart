@@ -1,4 +1,4 @@
-import '../hash.dart';
+import '../auth.dart';
 import '../state.dart';
 import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
@@ -18,7 +18,7 @@ class QRCodePage extends StatelessWidget {
           child: ClipRRect(
             borderRadius: BorderRadius.circular(16),
             child: QrImageView(
-              data: AutherHash.qrFromHash(appData.userHash),
+              data: AutherAuth.qrFromHash(appData.userHash),
               version: QrVersions.auto,
               backgroundColor: Colors.white,
               eyeStyle:
