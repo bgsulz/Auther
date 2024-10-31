@@ -1,4 +1,5 @@
 <img class="auther-icon" src="assets/icon.png" alt="Auther Icon" width="200" />
+
 # Auther
 
 Auther is a codeword generator inspired by TOTP authentication systems. It aims to protect against identity cloning scams.
