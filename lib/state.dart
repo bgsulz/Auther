@@ -50,24 +50,22 @@ class AutherState extends ChangeNotifier {
     await file.writeAsString(str);
   }
 
-  Future<void> init([File? file]) async {
-    var workingFile = file ?? await _dataFile;
+  Future<void> init() async {
+    await loadFromFile(await _dataFile);
+  }
+
+  Future<void> loadFromFile(File file) async {
+    var str = await file.readAsString();
+    dynamic data;
     try {
-      var str = await workingFile.readAsString();
-      if (str.isEmpty) {
-        _saveData();
-      }
-      var data = jsonDecode(str);
-      var hash = await storage.getPassphrase() ?? "";
-      _data = AutherData.fromJson(data, hash);
-      if (file == null) {
-        await _saveData();
-      }
-      notifyListeners();
-    } on Exception catch (e) {
-      print("Exception occurred: $e");
-      rethrow;
+      data = jsonDecode(str);
+    } on Exception {
+      data = AutherData.empty();
     }
+    var hash = await storage.getPassphrase() ?? "";
+    _data = AutherData.fromJson(data, hash);
+    await _saveData();
+    notifyListeners();
   }
 
   int get seed => _timer.seed;
@@ -124,5 +122,11 @@ class AutherState extends ChangeNotifier {
     storage.deletePassphrase();
     codes.clear();
     update();
+  }
+
+  Future<void> _deleteFile() async {
+    var file = await _dataFile;
+    await file.delete();
+    storage.deletePassphrase();
   }
 }

@@ -164,7 +164,7 @@ class Settings {
 
     if (result != null) {
       File file = File(result.files.single.path!);
-      await appState.init(file);
+      await appState.loadFromFile(file);
       if (context.mounted) {
         Navigator.of(context).pushReplacementNamed('/codes');
         ScaffoldMessenger.of(context).showSnackBar(
