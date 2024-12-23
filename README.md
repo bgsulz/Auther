@@ -14,7 +14,8 @@ Auther doesn't store any personal information or communicate with a server. It e
 ### Why does this app exist?
 
 1. The age of zero-cost deepfakes is imminent. 
-2. Some are already abusing this technology to run imposter scams. 
+2. Some are already abusing this technology to run imposter scams.
+
 For an ongoing chronicle of evidence for both of these points, [please see this page.](https://bgsulz.com/auther/) 
 
 If you're reading this, you can probably sniff out a deepfake -- but can all your relatives and friends?
