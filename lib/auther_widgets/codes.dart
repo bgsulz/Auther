@@ -31,63 +31,63 @@ class CodeListPage extends StatelessWidget {
     return CustomScrollView(
       slivers: [
         AutherAppBar(context: context, appState: appState),
-        _buildList(appState),
+        _buildList(context, appState),
       ],
     );
   }
 
-  Widget _buildList(AutherState appState) {
-    return SliverList(
-      delegate: SliverChildBuilderDelegate(
-        (context, index) {
-          return Dismissible(
-            key: Key(appState.visibleCodes[index].name),
-            direction: DismissDirection.horizontal,
-            background: Container(
-              alignment: Alignment.centerLeft,
-              padding: const EdgeInsets.only(left: 16),
-              color: Colors.blue,
-              child: const Icon(
-                Icons.edit,
-                color: Colors.white,
-              ),
+  Widget _buildList(BuildContext context, AutherState appState) {
+    return SliverReorderableList(
+      itemBuilder: (context, index) {
+        return Dismissible(
+          key: Key("${appState.visibleCodes[index].hashCode}"),
+          direction: DismissDirection.horizontal,
+          background: Container(
+            alignment: Alignment.centerLeft,
+            padding: const EdgeInsets.only(left: 16),
+            color: Colors.blue,
+            child: const Icon(
+              Icons.edit,
+              color: Colors.white,
             ),
-            confirmDismiss: (direction) async {
-              if (direction == DismissDirection.startToEnd) {
-                _showEditDialog(context, appState, index);
-                return false;
-              } else {
-                return await _showConfirmDeletionDialog(
-                    context, appState, index);
-              }
-            },
-            onDismissed: (dir) {
-              var state = Provider.of<AutherState>(context, listen: false);
-              state.removePersonAt(index);
-            },
-            secondaryBackground: Container(
-              alignment: Alignment.centerRight,
-              padding: const EdgeInsets.only(right: 16),
-              color: Colors.red,
-              child: const Icon(
-                Icons.delete,
-                color: Colors.white,
-              ),
+          ),
+          confirmDismiss: (direction) async {
+            if (direction == DismissDirection.startToEnd) {
+              _showEditDialog(context, appState, index);
+              return false;
+            } else {
+              return await _showConfirmDeletionDialog(context, appState, index);
+            }
+          },
+          onDismissed: (dir) {
+            var state = Provider.of<AutherState>(context, listen: false);
+            state.removePersonAt(index);
+          },
+          secondaryBackground: Container(
+            alignment: Alignment.centerRight,
+            padding: const EdgeInsets.only(right: 16),
+            color: Colors.red,
+            child: const Icon(
+              Icons.delete,
+              color: Colors.white,
             ),
-            child: PersonCard(
-              person: appState.visibleCodes[index],
-              seed: appState.seed,
-              userHash: appState.userHash,
-            ),
-          );
-        },
-        childCount: appState.visibleCodes.length,
-      ),
+          ),
+          child: PersonCard(
+            person: appState.visibleCodes[index],
+            seed: appState.seed,
+            userHash: appState.userHash,
+            index: index,
+          ),
+        );
+      },
+      itemCount: appState.visibleCodes.length,
+      onReorder: (int oldIndex, int newIndex) {
+        appState.reorderPerson(oldIndex, newIndex);
+      },
     );
   }
 
   void _showEditDialog(BuildContext context, AutherState appState, int index) {
-    final appState = Provider.of<AutherState>(context, listen: false);
     final person = appState.codes[index];
     final nameController = TextEditingController(text: person.name);
     final emergencyController = TextEditingController();
@@ -187,11 +187,13 @@ class PersonCard extends StatelessWidget {
     required this.person,
     required this.seed,
     required this.userHash,
+    required this.index,
   });
 
   final Person person;
   final int seed;
   final String userHash;
+  final int index;
 
   Widget _buildAuthCode(BuildContext context, Person person, String userHash,
       int seed, bool isSaying) {
@@ -219,54 +221,75 @@ class PersonCard extends StatelessWidget {
     // print("Rebuilding for person ${person.name} at ${DateTime.now()}.");
     return Card(
       clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onLongPress: () => Clipboard.setData(
-          ClipboardData(text: person.sayAuthCode(userHash, seed)),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                person.name,
-                style: Theme.of(context).textTheme.bodyLarge,
-              ),
-              SizedBox(height: 8),
-              if (person._isBroken) ...[
-                SizedBox(
-                  height: 140,
-                  child: Row(
-                    children: [
-                      Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Stack(
+        children: [
+          InkWell(
+            onLongPress: () => Clipboard.setData(
+              ClipboardData(text: person.sayAuthCode(userHash, seed)),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(16).copyWith(left: 64),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    person.name,
+                    style: Theme.of(context).textTheme.bodyLarge,
+                  ),
+                  SizedBox(height: 8),
+                  if (person._isBroken) ...[
+                    SizedBox(
+                      height: 140,
+                      child: Row(
                         children: [
-                          Text(
-                            "Connection broken.",
-                            style: Theme.of(context).textTheme.displaySmall,
-                          ),
-                          SizedBox(height: 8),
-                          Text(
-                            "Rescan ${person.name}'s QR code.",
-                            style: Theme.of(context).textTheme.bodyLarge,
+                          Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                "Connection broken.",
+                                style: Theme.of(context).textTheme.displaySmall,
+                              ),
+                              SizedBox(height: 8),
+                              Text(
+                                "Rescan ${person.name}'s QR code.",
+                                style: Theme.of(context).textTheme.bodyLarge,
+                              ),
+                            ],
                           ),
                         ],
                       ),
-                    ],
-                  ),
-                )
-              ] else ...[
-                Row(
-                  children: [
-                    _buildAuthCode(context, person, userHash, seed, true),
-                    _buildAuthCode(context, person, userHash, seed, false),
+                    )
+                  ] else ...[
+                    Row(
+                      children: [
+                        _buildAuthCode(context, person, userHash, seed, true),
+                        _buildAuthCode(context, person, userHash, seed, false),
+                      ],
+                    ),
                   ],
-                ),
-              ],
-            ],
+                ],
+              ),
+            ),
           ),
-        ),
+          Positioned(
+            top: 0,
+            bottom: 0,
+            left: 0,
+            child: ReorderableDragStartListener(
+              index: index,
+              child: Container(
+                width: 64,
+                color: Colors.transparent,
+                child: Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Icon(Icons.drag_indicator,
+                      color: Theme.of(context).colorScheme.surfaceBright),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -279,7 +302,7 @@ class Person {
   });
 
   final String personHash;
-  final String name;
+  String name;
   bool _isBroken = false;
   bool get isBroken => _isBroken;
 

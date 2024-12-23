@@ -58,6 +58,7 @@ class _AutherAppBarState extends State<AutherAppBar> {
         onPressed: () {
           setState(() {
             widget.appState.searchController.clear();
+            widget.appState.notifyManual();
             _isSearching = false;
           });
         },

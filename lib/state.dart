@@ -14,7 +14,7 @@ import 'package:path_provider/path_provider.dart';
 class AutherState extends ChangeNotifier {
   final searchController = TextEditingController();
 
-  AutherData _data = AutherData(codes: []);
+  AutherData _data = AutherData.empty();
   String get dataJson => _data.toJsonString();
 
   AutherTimer _timer = AutherTimer();
@@ -51,6 +51,7 @@ class AutherState extends ChangeNotifier {
   }
 
   Future<void> init() async {
+    await (await _dataFile).delete();
     await loadFromFile(await _dataFile);
   }
 
@@ -59,9 +60,11 @@ class AutherState extends ChangeNotifier {
     dynamic data;
     try {
       data = jsonDecode(str);
-    } on Exception {
-      data = AutherData.empty();
+    } on Exception catch (e) {
+      print("OOPS: $e");
+      data = jsonDecode(jsonEncode(AutherData.empty()));
     }
+    print(jsonEncode(data));
     var hash = await storage.getPassphrase() ?? "";
     _data = AutherData.fromJson(data, hash);
     await _saveData();
@@ -83,13 +86,29 @@ class AutherState extends ChangeNotifier {
   }
 
   void addPerson(Person person) {
-    _data.codes.add(person);
-    _data.codes.sort((a, b) => a.name.compareTo(b.name));
+    codes.add(person);
+    // codes.sort((a, b) => a.name.compareTo(b.name));
     update();
   }
 
   void removePersonAt(int index) {
-    _data.codes.removeAt(index);
+    codes.removeAt(index);
+    update();
+  }
+
+  void reorderPerson(int oldIndex, int newIndex) {
+    if (oldIndex < 0 ||
+        oldIndex >= codes.length ||
+        newIndex < 0 ||
+        newIndex > codes.length) {
+      // Modified condition
+      return;
+    }
+    if (oldIndex < newIndex) {
+      newIndex -= 1;
+    }
+    final item = codes.removeAt(oldIndex);
+    codes.insert(newIndex, item);
     update();
   }
 
