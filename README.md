@@ -13,7 +13,11 @@ Auther doesn't store any personal information or communicate with a server. It e
 
 ### Why does this app exist?
 
-The age of zero-cost deepfakes is imminent.[[1]](https://arstechnica.com/information-technology/2024/04/microsofts-vasa-1-can-deepfake-a-person-with-one-photo-and-one-audio-track/)[[2]](https://arstechnica.com/information-technology/2024/08/new-ai-tool-enables-real-time-face-swapping-on-webcams-raising-fraud-concerns/)[[3]](https://arstechnica.com/information-technology/2023/01/microsofts-new-ai-can-simulate-anyones-voice-with-3-seconds-of-audio/) Some are already abusing this technology to run imposter scams.[[4]](https://arstechnica.com/information-technology/2024/04/alleged-ai-voice-imitation-leads-to-arrest-in-baltimore-school-racism-controversy/)[[5]](https://arstechnica.com/information-technology/2024/02/deepfake-scammer-walks-off-with-25-million-in-first-of-its-kind-ai-heist/)[[6]](https://www.cnn.com/2023/04/29/us/ai-scam-calls-kidnapping-cec/index.html) If you're reading this, you can probably sniff out a deepfake -- but can all your relatives and friends?
+1. The age of zero-cost deepfakes is imminent. 
+2. Some are already abusing this technology to run imposter scams. 
+For an ongoing chronicle of evidence for both of these points, [please see this page.](https://bgsulz.com/auther/) 
+
+If you're reading this, you can probably sniff out a deepfake -- but can all your relatives and friends?
 
 Using a single secret codeword may not be enough; if intercepted or guessed, your system is compromised. Auther provides a perpetual digital signature, so you and those close to you can communicate remotely with confidence.
 
