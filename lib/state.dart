@@ -37,25 +37,35 @@ class AutherState extends ChangeNotifier {
   Future<File> get _dataFile async {
     var dir = await getApplicationDocumentsDirectory();
     var file = File('${dir.path}/data.json');
+    if (await file.exists() == false) {
+      await file.create();
+      _saveData();
+    }
     return file;
   }
 
   Future<void> _saveData() async {
     var file = await _dataFile;
-    await file.writeAsString(_data.toJsonString());
+    var str = _data.toJsonString();
+    await file.writeAsString(str);
   }
 
   Future<void> init([File? file]) async {
     var workingFile = file ?? await _dataFile;
     try {
-      var data = jsonDecode(await workingFile.readAsString());
+      var str = await workingFile.readAsString();
+      if (str.isEmpty) {
+        _saveData();
+      }
+      var data = jsonDecode(str);
       var hash = await storage.getPassphrase() ?? "";
       _data = AutherData.fromJson(data, hash);
       if (file == null) {
         await _saveData();
       }
       notifyListeners();
-    } on Exception {
+    } on Exception catch (e) {
+      print("Exception occurred: $e");
       rethrow;
     }
   }
