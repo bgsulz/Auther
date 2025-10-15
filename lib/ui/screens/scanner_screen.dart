@@ -1,6 +1,8 @@
-import '../auther_widgets/codes.dart';
-import '../auth.dart';
-import '../state.dart';
+import 'package:auther/models/person.dart';
+
+import '../widgets/codes.dart';
+import '../../services/auth_service.dart';
+import '../../state/auther_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';

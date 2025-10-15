@@ -1,9 +1,9 @@
 import 'package:auther/customization/style.dart';
 
-import 'settings.dart';
-import '../auth.dart';
-import '../state.dart';
-import '../customization/config.dart';
+import 'settings_screen.dart';
+import '../../services/auth_service.dart';
+import '../../state/auther_state.dart';
+import '../../customization/config.dart';
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';

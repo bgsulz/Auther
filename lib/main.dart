@@ -1,14 +1,14 @@
-import '../state.dart';
+import '../state/auther_state.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'customization/style.dart';
-import 'screens/splash.dart';
-import 'screens/login.dart';
-import 'auther_widgets/codes.dart';
-import 'screens/qr.dart';
-import 'screens/scanner.dart';
-import 'screens/settings.dart';
+import 'ui/screens/splash_screen.dart';
+import 'ui/screens/login_screen.dart';
+import 'ui/widgets/codes.dart';
+import 'ui/screens/qr_screen.dart';
+import 'ui/screens/scanner_screen.dart';
+import 'ui/screens/settings_screen.dart';
 
 void main() {
   runApp(AutherApp());

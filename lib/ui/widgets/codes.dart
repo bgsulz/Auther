@@ -1,7 +1,8 @@
-import '../auther_widgets/appbar.dart';
-import '../state.dart';
+import 'package:auther/models/person.dart';
 
-import '../auth.dart';
+import 'appbar.dart';
+import '../../state/auther_state.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -237,7 +238,7 @@ class PersonCard extends StatelessWidget {
                     style: Theme.of(context).textTheme.bodyLarge,
                   ),
                   SizedBox(height: 8),
-                  if (person._isBroken) ...[
+                  if (person.isBroken) ...[
                     SizedBox(
                       height: 140,
                       child: Row(
@@ -292,41 +293,5 @@ class PersonCard extends StatelessWidget {
         ],
       ),
     );
-  }
-}
-
-class Person {
-  Person({
-    required this.personHash,
-    this.name = "Default Title",
-  });
-
-  final String personHash;
-  String name;
-  bool _isBroken = false;
-  bool get isBroken => _isBroken;
-
-  String hearAuthCode(String userHash, int seed) {
-    return AutherAuth.getOTP(userHash, personHash, seed);
-  }
-
-  String sayAuthCode(String userHash, int seed) {
-    return AutherAuth.getOTP(personHash, userHash, seed);
-  }
-
-  Person.fromJson(Map<String, dynamic> json)
-      : name = json['name'] as String,
-        personHash = json['personHash'] as String,
-        _isBroken = json['isBroken'] as bool;
-
-  Map<String, dynamic> toJson() => {
-        'name': name,
-        'personHash': personHash,
-        'isBroken': isBroken,
-      };
-
-  void breakConnection() {
-    print("BREAKING CONNECTION FOR $name");
-    _isBroken = true;
   }
 }

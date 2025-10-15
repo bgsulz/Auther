@@ -1,5 +1,5 @@
-import '../customization/config.dart';
-import '../state.dart';
+import '../../customization/config.dart';
+import '../../state/auther_state.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 

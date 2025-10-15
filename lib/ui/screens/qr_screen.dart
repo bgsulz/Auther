@@ -1,5 +1,6 @@
-import '../auth.dart';
-import '../state.dart';
+import 'package:auther/services/auth_service.dart';
+
+import '../../state/auther_state.dart';
 import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:flutter/material.dart';

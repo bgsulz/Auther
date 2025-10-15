@@ -1,10 +1,10 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:auther/models/person.dart';
 import 'package:file_picker/file_picker.dart';
 
-import '../auther_widgets/codes.dart';
-import '../auth.dart';
-import '../state.dart';
+import '../../services/auth_service.dart';
+import '../../state/auther_state.dart';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';

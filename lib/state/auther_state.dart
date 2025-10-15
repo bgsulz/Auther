@@ -1,9 +1,10 @@
-import 'package:auther/data.dart';
+import 'package:auther/models/auther_data.dart';
+import 'package:auther/models/person.dart';
+import 'package:auther/repositories/secure_storage_repository.dart';
+import 'package:auther/services/auth_service.dart';
+import 'package:auther/utils/timer.dart';
 
 import '../customization/config.dart';
-import '../auther_widgets/codes.dart';
-import 'auth.dart';
-import '../secure.dart';
 
 import 'dart:async';
 import 'dart:convert';
