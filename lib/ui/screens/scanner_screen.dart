@@ -1,6 +1,5 @@
 import 'package:auther/models/person.dart';
 
-import '../widgets/codes.dart';
 import '../../services/auth_service.dart';
 import '../../state/auther_state.dart';
 import 'package:flutter/material.dart';
@@ -22,7 +21,7 @@ class _CodeScanPageState extends State<CodeScanPage> {
     if (!mounted) return;
     if (_didScan) return;
 
-    var found = capture.barcodes.firstOrNull;
+    var found = capture.barcodes.isNotEmpty ? capture.barcodes.first : null;
     if (found == null) return;
 
     var qr = found.displayValue;

@@ -87,9 +87,12 @@ class SignupForm extends StatelessWidget {
     final appState = Provider.of<AutherState>(context, listen: false);
 
     if (_formKey.currentState!.validate()) {
-      var hash = AutherAuth.hashPassphrase(_controllerFirst.text);
-      appState.userHash = hash;
-      Navigator.pushReplacementNamed(context, "/codes");
+      () async {
+        await appState.setPassphrase(_controllerFirst.text);
+        if (context.mounted) {
+          Navigator.pushReplacementNamed(context, "/codes");
+        }
+      }();
     }
   }
 }
@@ -156,8 +159,8 @@ class LoginForm extends StatelessWidget {
             ),
             controller: formController,
             obscureText: true,
-            validator: (value) => _validatePassphrase(appState, value),
-            onFieldSubmitted: (value) => _onFieldSubmitted(context),
+            validator: (value) => (value == null || value.isEmpty) ? 'Passphrase must not be empty' : null,
+            onFieldSubmitted: (value) => _onFieldSubmitted(context, appState, formController.text),
           ),
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
@@ -168,7 +171,7 @@ class LoginForm extends StatelessWidget {
               ),
               SizedBox(width: 8),
               ElevatedButton(
-                onPressed: () => _onFieldSubmitted(context),
+                onPressed: () => _onFieldSubmitted(context, appState, formController.text),
                 child: Text('Enter'),
               ),
             ],
@@ -178,19 +181,19 @@ class LoginForm extends StatelessWidget {
     );
   }
 
-  String? _validatePassphrase(AutherState appState, String? value) {
-    if (value == null ||
-        value.isEmpty ||
-        AutherAuth.hashPassphrase(value) != appState.userHash) {
-      return 'Invalid passphrase';
+  void _onFieldSubmitted(BuildContext context, AutherState appState, String value) async {
+    if (!_formKey.currentState!.validate()) return;
+    final ok = await appState.validatePassphrase(value);
+    if (ok) {
+      if (context.mounted) {
+        Navigator.pushReplacementNamed(context, "/codes");
+      }
     } else {
-      return null;
-    }
-  }
-
-  void _onFieldSubmitted(BuildContext context) {
-    if (_formKey.currentState!.validate()) {
-      Navigator.pushReplacementNamed(context, "/codes");
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Invalid passphrase')),
+        );
+      }
     }
   }
 }

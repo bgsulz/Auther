@@ -44,7 +44,6 @@ class AutherState extends ChangeNotifier {
   String get userHash => _userHash;
   set userHash(String hash) {
     _userHash = hash;
-    secureStorage.setPassphrase(hash);
     _persist();
   }
 
@@ -59,7 +58,16 @@ class AutherState extends ChangeNotifier {
     try {
       final content = await repository.loadData();
       final Map<String, dynamic> json = jsonDecode(content ?? '{}');
-      final String hash = await secureStorage.getPassphrase() ?? '';
+      final String? stored = await secureStorage.getPassphrase();
+      String hash = '';
+      if (stored != null && stored.isNotEmpty) {
+        try {
+          final rec = jsonDecode(stored) as Map<String, dynamic>;
+          hash = (rec['derivedKeyHex'] as String? ?? '');
+        } catch (_) {
+          hash = stored;
+        }
+      }
       final data = AutherData.fromJson(json, hash);
       _people = data.codes;
       _userHash = data.userHash;
@@ -92,7 +100,7 @@ class AutherState extends ChangeNotifier {
       await repository.saveData(data.toJsonString());
       notifyListeners();
     } catch (_) {
-      // ignore
+      // ignore malformed import
     }
   }
 
@@ -159,6 +167,24 @@ class AutherState extends ChangeNotifier {
     _people.clear();
     await repository.deleteAll();
     notifyListeners();
+  }
+
+  Future<void> setPassphrase(String passphrase) async {
+    final rec = AutherAuth.deriveCredentials(passphrase);
+    await secureStorage.setPassphrase(jsonEncode(rec));
+    _userHash = rec['derivedKeyHex'] as String;
+    await _persist();
+  }
+
+  Future<bool> validatePassphrase(String passphrase) async {
+    final stored = await secureStorage.getPassphrase();
+    if (stored == null || stored.isEmpty) return false;
+    try {
+      final rec = jsonDecode(stored) as Map<String, dynamic>;
+      return AutherAuth.verifyPassphrase(passphrase, rec);
+    } catch (_) {
+      return AutherAuth.hashPassphrase(passphrase) == stored;
+    }
   }
 
   @override
