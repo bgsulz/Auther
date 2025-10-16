@@ -9,6 +9,9 @@ import 'ui/widgets/codes.dart';
 import 'ui/screens/qr_screen.dart';
 import 'ui/screens/scanner_screen.dart';
 import 'ui/screens/settings_screen.dart';
+import 'repositories/file_auther_repository.dart';
+import 'repositories/secure_storage_repository.dart';
+import 'repositories/auth_ticker_service.dart';
 
 void main() {
   runApp(AutherApp());
@@ -20,7 +23,11 @@ class AutherApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (context) => AutherState(),
+      create: (context) => AutherState(
+        repository: FileAutherRepository(),
+        secureStorage: storage,
+        ticker: AuthTicker(),
+      ),
       child: MaterialApp(
         title: 'Auther',
         theme: ThemeData(

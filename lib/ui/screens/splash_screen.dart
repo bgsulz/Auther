@@ -25,8 +25,6 @@ class SplashScreen extends StatelessWidget {
   }
 
   Future<void> _loadAndRedirect(BuildContext context) async {
-    final appState = Provider.of<AutherState>(context, listen: false);
-    await appState.init();
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     if (!prefs.containsKey("has_visited") ||
         prefs.getBool("has_visited") == false) {

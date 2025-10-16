@@ -1,15 +1,27 @@
-import 'package:auther/services/auth_service.dart';
+import 'package:json_annotation/json_annotation.dart';
+import '../services/auth_service.dart';
 
+part 'person.g.dart';
+
+@JsonSerializable()
 class Person {
-  Person({
+  final String personHash;
+  final String name;
+  final bool isBroken;
+
+  const Person({
     required this.personHash,
-    this.name = "Default Title",
+    required this.name,
+    this.isBroken = false,
   });
 
-  final String personHash;
-  String name;
-  bool _isBroken = false;
-  bool get isBroken => _isBroken;
+  Person copyWith({String? personHash, String? name, bool? isBroken}) {
+    return Person(
+      personHash: personHash ?? this.personHash,
+      name: name ?? this.name,
+      isBroken: isBroken ?? this.isBroken,
+    );
+  }
 
   String hearAuthCode(String userHash, int seed) {
     return AutherAuth.getOTP(userHash, personHash, seed);
@@ -19,19 +31,6 @@ class Person {
     return AutherAuth.getOTP(personHash, userHash, seed);
   }
 
-  Person.fromJson(Map<String, dynamic> json)
-      : name = json['name'] as String,
-        personHash = json['personHash'] as String,
-        _isBroken = json['isBroken'] as bool;
-
-  Map<String, dynamic> toJson() => {
-        'name': name,
-        'personHash': personHash,
-        'isBroken': isBroken,
-      };
-
-  void breakConnection() {
-    print("BREAKING CONNECTION FOR $name");
-    _isBroken = true;
-  }
+  factory Person.fromJson(Map<String, dynamic> json) => _$PersonFromJson(json);
+  Map<String, dynamic> toJson() => _$PersonToJson(this);
 }
