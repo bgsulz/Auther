@@ -1,7 +1,6 @@
 import 'package:auther/customization/style.dart';
 
 import 'settings_screen.dart';
-import '../../services/auth_service.dart';
 import '../../state/auther_state.dart';
 import '../../customization/config.dart';
 
@@ -36,11 +35,29 @@ class LoginPage extends StatelessWidget {
   }
 }
 
-class SignupForm extends StatelessWidget {
-  final _formKey = GlobalKey<FormState>();
+class SignupForm extends StatefulWidget {
+  @override
+  State<SignupForm> createState() => _SignupFormState();
+}
 
-  final _controllerFirst = TextEditingController();
-  final _controllerSecond = TextEditingController();
+class _SignupFormState extends State<SignupForm> {
+  final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _controllerFirst;
+  late final TextEditingController _controllerSecond;
+
+  @override
+  void initState() {
+    super.initState();
+    _controllerFirst = TextEditingController();
+    _controllerSecond = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _controllerFirst.dispose();
+    _controllerSecond.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -139,13 +156,30 @@ class SignupTextField extends StatelessWidget {
   }
 }
 
-class LoginForm extends StatelessWidget {
+class LoginForm extends StatefulWidget {
+  @override
+  State<LoginForm> createState() => _LoginFormState();
+}
+
+class _LoginFormState extends State<LoginForm> {
   final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _formController;
+
+  @override
+  void initState() {
+    super.initState();
+    _formController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _formController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final appState = Provider.of<AutherState>(context, listen: false);
-    final formController = TextEditingController();
 
     return Form(
       key: _formKey,
@@ -157,10 +191,10 @@ class LoginForm extends StatelessWidget {
               labelText: 'Passphrase',
               helperText: 'Enter your passphrase here',
             ),
-            controller: formController,
+            controller: _formController,
             obscureText: true,
             validator: (value) => (value == null || value.isEmpty) ? 'Passphrase must not be empty' : null,
-            onFieldSubmitted: (value) => _onFieldSubmitted(context, appState, formController.text),
+            onFieldSubmitted: (value) => _onFieldSubmitted(context, appState, _formController.text),
           ),
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
@@ -171,7 +205,7 @@ class LoginForm extends StatelessWidget {
               ),
               SizedBox(width: 8),
               ElevatedButton(
-                onPressed: () => _onFieldSubmitted(context, appState, formController.text),
+                onPressed: () => _onFieldSubmitted(context, appState, _formController.text),
                 child: Text('Enter'),
               ),
             ],

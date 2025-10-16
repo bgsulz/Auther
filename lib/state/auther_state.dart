@@ -190,6 +190,7 @@ class AutherState extends ChangeNotifier {
   @override
   void dispose() {
     _tickerSub?.cancel();
+    searchController.dispose();
     super.dispose();
   }
 }
