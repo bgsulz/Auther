@@ -43,30 +43,29 @@ class _EditPersonScreenState extends State<EditPersonScreen> {
       _nameController.text = personArg.name;
     }
 
-    final appState = Provider.of<AutherState>(context, listen: false);
+    final appState = Provider.of<AutherState>(context);
+    // Resolve the latest person state by hash so we reflect updates (e.g., isBroken)
+    final person = appState.codes.firstWhere(
+      (p) => p.personHash == personArg.personHash,
+      orElse: () => personArg,
+    );
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Edit code'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.delete),
-            tooltip: 'Delete',
-            onPressed: () async {
-              final confirm = await _confirmDelete(context, personArg);
-              if (confirm) {
-                appState.removePerson(personArg);
-                if (mounted) Navigator.of(context).pop();
-              }
-            },
-          ),
-        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            // Codes section
+            _buildCodes(context, person, appState.userHash, appState.seed),
+            const SizedBox(height: 16),
+            const Divider(),
+            const SizedBox(height: 16),
+
+            // Edit name
             TextField(
               controller: _nameController,
               decoration: const InputDecoration(
@@ -74,16 +73,50 @@ class _EditPersonScreenState extends State<EditPersonScreen> {
                 labelText: 'Edit name',
               ),
             ),
+
             const SizedBox(height: 16),
-            TextField(
-              controller: _emergencyController,
-              decoration: InputDecoration(
-                border: const OutlineInputBorder(),
-                labelText: "Enter ${personArg.name}'s passphrase (emergency)",
+
+            if (!person.isBroken) ...[
+              // Emergency description
+              Text(
+                'Emergency option: If one person cannot access their phone, they can provide their passphrase to break the connection. This lets you complete 2FA in a pinch, but it compromises their passcode and permanently breaks the secure link until you rescan their QR code.',
+                style: Theme.of(context).textTheme.bodyMedium,
               ),
-              obscureText: true,
+
+              const SizedBox(height: 12),
+
+              // Emergency option input
+              TextField(
+                controller: _emergencyController,
+                decoration: InputDecoration(
+                  border: const OutlineInputBorder(),
+                  labelText: "Enter ${person.name}'s passphrase (emergency)",
+                ),
+                obscureText: true,
+              ),
+
+              const SizedBox(height: 12),
+            ],
+
+            // Full-width delete
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.error,
+                foregroundColor: Theme.of(context).colorScheme.onError,
+              ),
+              onPressed: () async {
+                final confirm = await _confirmDelete(context, personArg);
+                if (confirm) {
+                  appState.removePerson(personArg);
+                  if (mounted) Navigator.of(context).pop();
+                }
+              },
+              child: const Text('Delete this person\'s code'),
             ),
+
             const Spacer(),
+
+            // Save / Cancel row
             Row(
               children: [
                 Expanded(
@@ -96,7 +129,7 @@ class _EditPersonScreenState extends State<EditPersonScreen> {
                 Expanded(
                   child: ElevatedButton(
                     onPressed: () {
-                      _onSave(context, appState, personArg);
+                      _onSave(context, appState, person);
                     },
                     child: const Text('Save'),
                   ),
@@ -109,13 +142,69 @@ class _EditPersonScreenState extends State<EditPersonScreen> {
     );
   }
 
-  Future<void> _onSave(BuildContext context, AutherState appState, Person person) async {
+  Widget _buildCodes(
+      BuildContext context, Person person, String userHash, int seed) {
+    if (person.isBroken) {
+      return SizedBox(
+        height: 140,
+        child: Row(
+          children: [
+            Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Connection broken.',
+                  style: Theme.of(context).textTheme.displaySmall,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  "Rescan ${person.name}'s QR code.",
+                  style: Theme.of(context).textTheme.bodyLarge,
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+    }
+
+    Widget buildAuth(bool isSaying) {
+      return Expanded(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              isSaying ? 'Say: ' : 'Hear: ',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            Text(
+              isSaying
+                  ? person.sayAuthCode(userHash, seed).replaceAll(' ', '\n')
+                  : person.hearAuthCode(userHash, seed).replaceAll(' ', '\n'),
+              style: Theme.of(context).textTheme.headlineLarge,
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Row(
+      children: [
+        buildAuth(true),
+        buildAuth(false),
+      ],
+    );
+  }
+
+  Future<void> _onSave(
+      BuildContext context, AutherState appState, Person person) async {
     final newName = _nameController.text;
     final pass = _emergencyController.text;
 
     appState.editPersonName(person, newName);
 
-    if (pass.isNotEmpty) {
+    if (!person.isBroken && pass.isNotEmpty) {
       final isValid = appState.checkEmergency(person, pass);
       if (!isValid) {
         if (!mounted) return;
@@ -134,7 +223,8 @@ class _EditPersonScreenState extends State<EditPersonScreen> {
           context: context,
           builder: (context) => AlertDialog(
             title: const Text('Delete code'),
-            content: Text("Are you sure you want to delete ${person.name}'s codewords?"),
+            content: Text(
+                "Are you sure you want to delete ${person.name}'s codewords?"),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(false),
