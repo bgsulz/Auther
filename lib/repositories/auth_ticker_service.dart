@@ -16,6 +16,8 @@ class AuthTicker {
     final timeUntilNextMultiple = Config.intervalMillis - (now % Config.intervalMillis);
     _initialSeed = now + timeUntilNextMultiple;
     _offsetCount = 0;
+    // Emit the first seed immediately so consumers can render a determinate countdown.
+    _seedController.add(_initialSeed);
     // fire first after the delay
     Timer(Duration(milliseconds: timeUntilNextMultiple), () {
       _tick();
