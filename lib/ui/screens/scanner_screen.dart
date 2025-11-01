@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:provider/provider.dart';
+import '../widgets/color_strip.dart';
 
 class CodeScanPage extends StatefulWidget {
   const CodeScanPage({super.key});
@@ -26,9 +27,12 @@ class _CodeScanPageState extends State<CodeScanPage> {
 
     var qr = found.displayValue;
     if (qr == null) return;
-    if (!AutherAuth.isPlausibleQr(qr)) return;
-
-    var hash = AutherAuth.hashFromQr(qr);
+    final parsed = AutherAuth.parseQr(qr);
+    if (parsed == null) return;
+    final now = DateTime.now().millisecondsSinceEpoch;
+    if (!AutherAuth.isSlotAcceptable(parsed['slot'] as int, now)) return;
+    final hash = parsed['userHash'] as String;
+    final slot = parsed['slot'] as int;
 
     HapticFeedback.vibrate();
 
@@ -41,44 +45,89 @@ class _CodeScanPageState extends State<CodeScanPage> {
       context: context,
       builder: (BuildContext context) {
         final nameController = TextEditingController();
+        bool confirmed = false;
 
         return Padding(
-          padding:
-              EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-          child: SizedBox(
-            height: 200,
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Successfully scanned!',
-                    style: Theme.of(context).textTheme.headlineMedium,
-                  ),
-                  SizedBox(height: 16),
-                  TextFormField(
-                    decoration: const InputDecoration(
-                      border: OutlineInputBorder(),
-                      labelText: 'Enter name',
+          padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+          child: StatefulBuilder(
+            builder: (context, setModalState) {
+              return Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      confirmed ? 'Verified now' : 'Do the colors match on both phones?',
+                      style: Theme.of(context).textTheme.headlineMedium,
                     ),
-                    controller: nameController,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Name must not be empty';
-                      } else {
-                        return null;
-                      }
-                    },
-                    onFieldSubmitted: (value) {
-                      if (nameController.text.isNotEmpty) {
-                        _savePerson(hash, nameController.text);
-                      }
-                    },
-                  ),
-                ],
-              ),
-            ),
+                    const SizedBox(height: 8),
+                    ColorStrip(slot: slot, height: 16),
+                    const SizedBox(height: 12),
+                    if (!confirmed) ...[
+                      Text(
+                        'Ask the other person: do you see these 4 colors in this order?\n(Colors change every ~30 seconds.)',
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: () {
+                                Navigator.of(context).pop();
+                              },
+                              child: const Text('No, try again'),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: ElevatedButton(
+                              onPressed: () {
+                                setModalState(() {
+                                  confirmed = true;
+                                });
+                              },
+                              child: const Text('Yes, they match'),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ] else ...[
+                      Text(
+                        'Enter a name for this person.',
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        decoration: const InputDecoration(
+                          border: OutlineInputBorder(),
+                          labelText: 'Enter name',
+                        ),
+                        controller: nameController,
+                        onFieldSubmitted: (value) {
+                          if (nameController.text.isNotEmpty) {
+                            _savePerson(hash, nameController.text);
+                          }
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: () {
+                            if (nameController.text.isNotEmpty) {
+                              _savePerson(hash, nameController.text);
+                            }
+                          },
+                          child: const Text('Save'),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              );
+            },
           ),
         );
       },

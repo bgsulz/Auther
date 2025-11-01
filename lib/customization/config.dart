@@ -19,4 +19,21 @@ class Config {
       "Choose something easy to remember and hard to guess.";
 
   static const String passphraseKey = 'passphrase';
+
+  // UI: Color strip settings
+  static const int colorStripCount = 4;
+  static const List<int> colorPalette = [
+    0xFF1F77B4,
+    0xFFFF7F0E,
+    0xFF2CA02C,
+    0xFFD62728,
+    0xFF9467BD,
+    0xFF8C564B,
+    0xFFE377C2,
+    0xFF7F7F7F,
+    0xFFBCBD22,
+    0xFF17BECF,
+    0xFF003F5C,
+    0xFFFFA600,
+  ];
 }

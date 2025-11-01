@@ -3,6 +3,8 @@ import '../../customization/words.dart';
 import 'package:crypto/crypto.dart';
 import 'dart:math';
 import 'dart:typed_data';
+import '../../customization/config.dart';
+import 'package:flutter/material.dart';
 
 class AutherAuth {
   static const int refreshIntervalSeconds = 30;
@@ -36,6 +38,42 @@ class AutherAuth {
     var truthNoWhitespace = truth.replaceAll(' ', '');
     var enteredNoWhitespace = entered.replaceAll(' ', '');
     return truthNoWhitespace.toLowerCase() == enteredNoWhitespace.toLowerCase();
+  }
+
+  // Expiring QR helpers
+  // Format: "AutherX:<slot>:<userHash>"
+  static int currentSlot(int nowMillis) => nowMillis ~/ Config.intervalMillis;
+
+  static String qrEncode(String userHash, int slot) => 'AutherX:$slot:$userHash';
+
+  static Map<String, dynamic>? parseQr(String data) {
+    if (!data.startsWith('AutherX:')) return null;
+    final parts = data.split(':');
+    if (parts.length != 3) return null;
+    final slotStr = parts[1];
+    final hash = parts[2];
+    final slot = int.tryParse(slotStr);
+    if (slot == null) return null;
+    if (!isPlausibleHash(hash)) return null;
+    return {'slot': slot, 'userHash': hash};
+  }
+
+  static bool isSlotAcceptable(int scannedSlot, int nowMillis, {int skew = 1}) {
+    final curr = currentSlot(nowMillis);
+    return (scannedSlot - curr).abs() <= skew;
+  }
+
+  static List<Color> colorsForSlot(int slot, {int? count}) {
+    final palette = Config.colorPalette.map((argb) => Color(argb)).toList(growable: false);
+    final n = count ?? Config.colorStripCount;
+    final input = utf8.encode('$slot|Auther');
+    final h = sha256.convert(input).bytes;
+    final result = <Color>[];
+    for (int i = 0; i < n; i++) {
+      final idx = h[i] % palette.length;
+      result.add(palette[idx]);
+    }
+    return result;
   }
 
   static const int kdfIterations = 200000;
