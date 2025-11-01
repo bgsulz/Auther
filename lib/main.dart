@@ -9,6 +9,7 @@ import 'ui/widgets/codes.dart';
 import 'ui/screens/qr_screen.dart';
 import 'ui/screens/scanner_screen.dart';
 import 'ui/screens/settings_screen.dart';
+import 'ui/screens/edit_person_screen.dart';
 import 'repositories/file_auther_repository.dart';
 import 'repositories/secure_storage_repository.dart';
 import 'repositories/auth_ticker_service.dart';
@@ -45,6 +46,7 @@ class AutherApp extends StatelessWidget {
       '/intro': (context) => IntroPage(),
       '/login': (context) => LoginPage(),
       '/codes': (context) => CodeListPage(),
+      '/codes/edit': (context) => EditPersonScreen(),
       '/codes/scan': (context) => CodeScanPage(),
       '/codes/qr': (context) => QRCodePage(),
       '/codes/settings': (context) => SettingsPage(),

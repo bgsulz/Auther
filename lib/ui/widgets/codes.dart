@@ -40,30 +40,18 @@ class CodeListPage extends StatelessWidget {
   Widget _buildList(BuildContext context, AutherState appState) {
     return SliverReorderableList(
       itemBuilder: (context, index) {
+        final person = appState.visibleCodes[index];
         return Dismissible(
-          key: Key("${appState.visibleCodes[index].hashCode}"),
-          direction: DismissDirection.horizontal,
-          background: Container(
-            alignment: Alignment.centerLeft,
-            padding: const EdgeInsets.only(left: 16),
-            color: Colors.blue,
-            child: const Icon(
-              Icons.edit,
-              color: Colors.white,
-            ),
-          ),
+          key: Key("${person.hashCode}"),
+          direction: DismissDirection.endToStart,
           confirmDismiss: (direction) async {
-            if (direction == DismissDirection.startToEnd) {
-              _showEditDialog(context, appState, index);
-              return false;
-            } else {
-              return await _showConfirmDeletionDialog(context, appState, index);
-            }
+            return await _showConfirmDeletionDialog(context, appState, person);
           },
           onDismissed: (dir) {
             var state = Provider.of<AutherState>(context, listen: false);
-            state.removePersonAt(index);
+            state.removePerson(person);
           },
+          background: const SizedBox.shrink(),
           secondaryBackground: Container(
             alignment: Alignment.centerRight,
             padding: const EdgeInsets.only(right: 16),
@@ -74,7 +62,7 @@ class CodeListPage extends StatelessWidget {
             ),
           ),
           child: PersonCard(
-            person: appState.visibleCodes[index],
+            person: person,
             seed: appState.seed,
             userHash: appState.userHash,
             index: index,
@@ -88,80 +76,15 @@ class CodeListPage extends StatelessWidget {
     );
   }
 
-  void _showEditDialog(BuildContext context, AutherState appState, int index) {
-    final person = appState.codes[index];
-    final nameController = TextEditingController(text: person.name);
-    final emergencyController = TextEditingController();
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Options'),
-          content: SizedBox(
-            width: 400,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: nameController,
-                  decoration: InputDecoration(
-                    border: const OutlineInputBorder(),
-                    labelText: 'Edit name',
-                  ),
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: emergencyController,
-                  decoration: InputDecoration(
-                    border: OutlineInputBorder(),
-                    labelText: 'Enter ${person.name}\'s passphrase (emergency)',
-                  ),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () {
-                appState.editPersonName(person, nameController.text);
-                if (emergencyController.text.isNotEmpty) {
-                  var isValid =
-                      appState.checkEmergency(person, emergencyController.text);
-                  if (!isValid) {
-                    // TODO: Change to a validated form -- no snackbar.
-                    ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Invalid passphrase')));
-                  } else {
-                    Navigator.of(context).pop();
-                  }
-                } else {
-                  Navigator.of(context).pop();
-                }
-              },
-              child: const Text('Save'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
   Future<bool> _showConfirmDeletionDialog(
-      BuildContext context, AutherState appState, int index) {
+      BuildContext context, AutherState appState, Person person) {
     return showDialog<bool>(
       context: context,
       builder: (context) {
         return AlertDialog(
           title: const Text('Delete code'),
           content: Text(
-              "Are you sure you want to delete ${appState.codes[index].name}'s codewords?"),
+              "Are you sure you want to delete ${person.name}'s codewords?"),
           actions: [
             TextButton(
               child: const Text('No'),
@@ -225,6 +148,11 @@ class PersonCard extends StatelessWidget {
       child: Stack(
         children: [
           InkWell(
+            onTap: () => Navigator.pushNamed(
+              context,
+              '/codes/edit',
+              arguments: person,
+            ),
             onLongPress: () => Clipboard.setData(
               ClipboardData(text: person.sayAuthCode(userHash, seed)),
             ),

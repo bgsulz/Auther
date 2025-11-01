@@ -127,6 +127,13 @@ class AutherState extends ChangeNotifier {
     update();
   }
 
+  void removePerson(Person person) {
+    final index = _people.indexWhere((p) => p.personHash == person.personHash);
+    if (index == -1) return;
+    _people.removeAt(index);
+    update();
+  }
+
   void reorderPerson(int oldIndex, int newIndex) {
     if (oldIndex < 0 || oldIndex >= _people.length || newIndex < 0 || newIndex > _people.length) {
       return;
