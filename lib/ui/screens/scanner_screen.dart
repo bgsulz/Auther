@@ -18,28 +18,25 @@ class CodeScanPage extends StatefulWidget {
 class _CodeScanPageState extends State<CodeScanPage> {
   bool _didScan = false;
 
-  void _handleBarcode(BarcodeCapture capture) {
-    if (!mounted) return;
-    if (_didScan) return;
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final args = ModalRoute.of(context)?.settings.arguments;
+    if (args is Map && args['simulate'] == true && !_didScan) {
+      final now = DateTime.now().millisecondsSinceEpoch;
+      final int slot = (args['slot'] as int?) ?? AutherAuth.currentSlot(now);
+      final String hash = (args['hash'] as String?) ??
+          'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        setState(() {
+          _didScan = true;
+        });
+        _showConfirmSheet(context, hash, slot);
+      });
+    }
+  }
 
-    var found = capture.barcodes.isNotEmpty ? capture.barcodes.first : null;
-    if (found == null) return;
-
-    var qr = found.displayValue;
-    if (qr == null) return;
-    final parsed = AutherAuth.parseQr(qr);
-    if (parsed == null) return;
-    final now = DateTime.now().millisecondsSinceEpoch;
-    if (!AutherAuth.isSlotAcceptable(parsed['slot'] as int, now)) return;
-    final hash = parsed['userHash'] as String;
-    final slot = parsed['slot'] as int;
-
-    HapticFeedback.vibrate();
-
-    setState(() {
-      _didScan = true;
-    });
-
+  void _showConfirmSheet(BuildContext context, String hash, int slot) {
     showModalBottomSheet<void>(
       isScrollControlled: true,
       context: context,
@@ -131,14 +128,38 @@ class _CodeScanPageState extends State<CodeScanPage> {
           ),
         );
       },
-    ).then((enteredName) {
+    ).then((_) {
       if (mounted) {
         setState(() {
-          print("CLOSING BOTTOM SHEET");
           _didScan = false;
         });
       }
     });
+  }
+
+  void _handleBarcode(BarcodeCapture capture) {
+    if (!mounted) return;
+    if (_didScan) return;
+
+    var found = capture.barcodes.isNotEmpty ? capture.barcodes.first : null;
+    if (found == null) return;
+
+    var qr = found.displayValue;
+    if (qr == null) return;
+    final parsed = AutherAuth.parseQr(qr);
+    if (parsed == null) return;
+    final now = DateTime.now().millisecondsSinceEpoch;
+    if (!AutherAuth.isSlotAcceptable(parsed['slot'] as int, now)) return;
+    final hash = parsed['userHash'] as String;
+    final slot = parsed['slot'] as int;
+
+    HapticFeedback.vibrate();
+
+    setState(() {
+      _didScan = true;
+    });
+
+    _showConfirmSheet(context, hash, slot);
   }
 
   @override

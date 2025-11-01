@@ -23,9 +23,20 @@ class SettingsPage extends StatelessWidget {
           _buildResetListTile(context),
           _buildExportTile(context),
           _buildImportTile(context),
+          if (kDebugMode) _buildSimulateScanTile(context),
           if (kDebugMode) _buildSamplePeopleListTile(context),
         ],
       ),
+    );
+  }
+
+  ListTile _buildSimulateScanTile(BuildContext context) {
+    return ListTile(
+      title: const Text('Simulate scan (debug)'),
+      leading: const Icon(Icons.qr_code_2),
+      onTap: () {
+        Settings.simulateScan(context);
+      },
     );
   }
 
@@ -176,5 +187,20 @@ class Settings {
         SnackBar(content: Text('Auther data import canceled')),
       );
     }
+  }
+
+  static void simulateScan(BuildContext context) {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final slot = AutherAuth.currentSlot(now);
+    const hash = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+    Navigator.pushNamed(
+      context,
+      '/codes/scan',
+      arguments: {
+        'simulate': true,
+        'slot': slot,
+        'hash': hash,
+      },
+    );
   }
 }
