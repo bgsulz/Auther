@@ -128,7 +128,8 @@ try {
     Write-Host ""
     Write-Host "Release $tagName pushed successfully!" -ForegroundColor Green
     Write-Host "GitHub Actions will now build and create the release." -ForegroundColor Cyan
-    Write-Host "Watch progress at: https://github.com/$(git remote get-url origin -replace '.*github.com[:/]' -replace '\.git$')/actions" -ForegroundColor Cyan
+    $repoUrl = (git remote get-url origin) -replace '.*github.com[:/]', '' -replace '\.git$', ''
+    Write-Host "Watch progress at: https://github.com/$repoUrl/actions" -ForegroundColor Cyan
 
 } finally {
     Pop-Location
