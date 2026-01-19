@@ -20,6 +20,8 @@ class SettingsPage extends StatelessWidget {
       ),
       body: ListView(
         children: [
+          _buildThemeTile(context),
+          _buildBiometricTile(context),
           _buildResetListTile(context),
           _buildExportTile(context),
           _buildImportTile(context),
@@ -27,6 +29,59 @@ class SettingsPage extends StatelessWidget {
           if (kDebugMode) _buildSamplePeopleListTile(context),
         ],
       ),
+    );
+  }
+
+  Widget _buildThemeTile(BuildContext context) {
+    final appState = Provider.of<AutherState>(context);
+    return ListTile(
+      leading: const Icon(Icons.brightness_6),
+      title: const Text('Theme'),
+      trailing: DropdownButton<ThemeMode>(
+        value: appState.themeMode,
+        underline: const SizedBox(),
+        onChanged: (ThemeMode? mode) {
+          if (mode != null) {
+            appState.setThemeMode(mode);
+          }
+        },
+        items: const [
+          DropdownMenuItem(
+            value: ThemeMode.system,
+            child: Text('Auto'),
+          ),
+          DropdownMenuItem(
+            value: ThemeMode.light,
+            child: Text('Light'),
+          ),
+          DropdownMenuItem(
+            value: ThemeMode.dark,
+            child: Text('Dark'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBiometricTile(BuildContext context) {
+    final appState = Provider.of<AutherState>(context);
+    return FutureBuilder<bool>(
+      future: appState.biometricAvailable,
+      builder: (context, snapshot) {
+        final available = snapshot.data ?? false;
+        if (!available) {
+          return const SizedBox.shrink();
+        }
+        return SwitchListTile(
+          secondary: const Icon(Icons.fingerprint),
+          title: const Text('Biometric unlock'),
+          subtitle: const Text('Use fingerprint or face to unlock'),
+          value: appState.biometricEnabled,
+          onChanged: (value) async {
+            await appState.setBiometricEnabled(value);
+          },
+        );
+      },
     );
   }
 

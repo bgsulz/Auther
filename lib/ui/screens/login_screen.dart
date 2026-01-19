@@ -164,11 +164,16 @@ class LoginForm extends StatefulWidget {
 class _LoginFormState extends State<LoginForm> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _formController;
+  bool _biometricAttempted = false;
+  bool _showPassphraseForm = false;
 
   @override
   void initState() {
     super.initState();
     _formController = TextEditingController();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _attemptBiometricLogin();
+    });
   }
 
   @override
@@ -177,9 +182,31 @@ class _LoginFormState extends State<LoginForm> {
     super.dispose();
   }
 
+  Future<void> _attemptBiometricLogin() async {
+    if (_biometricAttempted) return;
+    _biometricAttempted = true;
+
+    final appState = Provider.of<AutherState>(context, listen: false);
+    if (!appState.biometricValid) {
+      setState(() => _showPassphraseForm = true);
+      return;
+    }
+
+    final success = await appState.attemptBiometricLogin();
+    if (success && mounted) {
+      Navigator.pushReplacementNamed(context, "/codes");
+    } else if (mounted) {
+      setState(() => _showPassphraseForm = true);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final appState = Provider.of<AutherState>(context, listen: false);
+
+    if (!_showPassphraseForm) {
+      return const Center(child: CircularProgressIndicator());
+    }
 
     return Form(
       key: _formKey,
@@ -219,6 +246,10 @@ class _LoginFormState extends State<LoginForm> {
     if (!_formKey.currentState!.validate()) return;
     final ok = await appState.validatePassphrase(value);
     if (ok) {
+      // Reset biometric timer if biometric was previously enabled
+      if (appState.biometricEnabled) {
+        await appState.recordBiometricAuth();
+      }
       if (context.mounted) {
         Navigator.pushReplacementNamed(context, "/codes");
       }

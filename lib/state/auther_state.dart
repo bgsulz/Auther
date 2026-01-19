@@ -5,10 +5,12 @@ import 'package:auther/repositories/person_repository.dart';
 import 'package:auther/repositories/secure_storage_repository.dart';
 import 'package:auther/services/auth_service.dart';
 import 'package:auther/services/passphrase_service.dart';
+import 'package:auther/services/biometric_service.dart';
 import 'package:auther/repositories/auth_ticker_service.dart';
 import 'package:auther/services/logger.dart';
 import 'package:flutter/material.dart';
 import 'package:auther/repositories/auther_repository.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../customization/config.dart';
 
 /// Main application state that coordinates services and notifies UI.
@@ -23,6 +25,17 @@ class AutherState extends ChangeNotifier {
 
   int _currentSeed = 0;
   StreamSubscription<int>? _tickerSub;
+
+  ThemeMode _themeMode = ThemeMode.system;
+  static const _themeModeKey = 'theme_mode';
+
+  // Biometric authentication
+  final BiometricService _biometricService = BiometricService();
+  bool _biometricEnabled = false;
+  DateTime? _biometricLastAuth;
+  static const _biometricEnabledKey = 'biometric_enabled';
+  static const _biometricLastAuthKey = 'biometric_last_auth';
+  static const _biometricTimeoutDays = 7;
 
   AutherState({
     required AutherRepository repository,
@@ -67,6 +80,58 @@ class AutherState extends ChangeNotifier {
   /// JSON representation of data (for export)
   String get dataJson => _personRepository.toJsonString();
 
+  /// Current theme mode
+  ThemeMode get themeMode => _themeMode;
+
+  /// Whether biometric authentication is enabled
+  bool get biometricEnabled => _biometricEnabled;
+
+  /// Whether biometric is valid (enabled and within timeout window)
+  bool get biometricValid {
+    if (!_biometricEnabled || _biometricLastAuth == null) return false;
+    final elapsed = DateTime.now().difference(_biometricLastAuth!);
+    return elapsed.inDays < _biometricTimeoutDays;
+  }
+
+  /// Check if device supports biometrics
+  Future<bool> get biometricAvailable => _biometricService.isAvailable();
+
+  /// Set theme mode and persist
+  Future<void> setThemeMode(ThemeMode mode) async {
+    _themeMode = mode;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_themeModeKey, mode.name);
+  }
+
+  /// Enable or disable biometric authentication
+  Future<void> setBiometricEnabled(bool enabled) async {
+    _biometricEnabled = enabled;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_biometricEnabledKey, enabled);
+    if (enabled) {
+      await recordBiometricAuth();
+    }
+    notifyListeners();
+  }
+
+  /// Record successful biometric authentication timestamp
+  Future<void> recordBiometricAuth() async {
+    _biometricLastAuth = DateTime.now();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_biometricLastAuthKey, _biometricLastAuth!.millisecondsSinceEpoch);
+  }
+
+  /// Attempt biometric login, returns true if successful
+  Future<bool> attemptBiometricLogin() async {
+    if (!biometricValid) return false;
+    final success = await _biometricService.authenticate();
+    if (success) {
+      await recordBiometricAuth();
+    }
+    return success;
+  }
+
   // --- Initialization ---
 
   Future<void> _init() async {
@@ -76,6 +141,32 @@ class AutherState extends ChangeNotifier {
       await _personRepository.load(hash);
     } catch (e) {
       logger.error('Failed to initialize state', e, null, 'AutherState');
+    }
+
+    // Load theme preference
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final themeName = prefs.getString(_themeModeKey);
+      if (themeName != null) {
+        _themeMode = ThemeMode.values.firstWhere(
+          (m) => m.name == themeName,
+          orElse: () => ThemeMode.system,
+        );
+      }
+    } catch (e) {
+      logger.error('Failed to load theme preference', e, null, 'AutherState');
+    }
+
+    // Load biometric preferences
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      _biometricEnabled = prefs.getBool(_biometricEnabledKey) ?? false;
+      final lastAuthMs = prefs.getInt(_biometricLastAuthKey);
+      if (lastAuthMs != null) {
+        _biometricLastAuth = DateTime.fromMillisecondsSinceEpoch(lastAuthMs);
+      }
+    } catch (e) {
+      logger.error('Failed to load biometric preferences', e, null, 'AutherState');
     }
 
     _tickerSub = _ticker.seedStream.listen((seed) {

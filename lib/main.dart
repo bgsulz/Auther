@@ -29,13 +29,22 @@ class AutherApp extends StatelessWidget {
         secureStorage: storage,
         ticker: AuthTicker(),
       ),
-      child: MaterialApp(
-        title: 'Auther',
-        theme: ThemeData(
-          brightness: Brightness.dark,
-          textTheme: Style.textTheme,
-        ),
-        routes: routes,
+      child: Consumer<AutherState>(
+        builder: (context, appState, child) {
+          return MaterialApp(
+            title: 'Auther',
+            theme: ThemeData(
+              brightness: Brightness.light,
+              textTheme: Style.textTheme,
+            ),
+            darkTheme: ThemeData(
+              brightness: Brightness.dark,
+              textTheme: Style.textTheme,
+            ),
+            themeMode: appState.themeMode,
+            routes: routes,
+          );
+        },
       ),
     );
   }
