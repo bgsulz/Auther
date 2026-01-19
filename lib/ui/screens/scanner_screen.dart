@@ -17,12 +17,14 @@ class CodeScanPage extends StatefulWidget {
 
 class _CodeScanPageState extends State<CodeScanPage> {
   bool _didScan = false;
+  bool _isSimulation = false;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     final args = ModalRoute.of(context)?.settings.arguments;
     if (args is Map && args['simulate'] == true && !_didScan) {
+      _isSimulation = true;
       final now = DateTime.now().millisecondsSinceEpoch;
       final int slot = (args['slot'] as int?) ?? AutherAuth.currentSlot(now);
       final String hash = (args['hash'] as String?) ??
@@ -48,7 +50,13 @@ class _CodeScanPageState extends State<CodeScanPage> {
         );
       },
     ).then((_) {
-      if (mounted) {
+      if (!mounted) return;
+
+      if (_isSimulation) {
+        // For simulations, dismissing the sheet should exit the scanner
+        if (context.mounted) Navigator.of(context).pop();
+      } else {
+        // For real scans, allow scanning again
         setState(() {
           _didScan = false;
         });
