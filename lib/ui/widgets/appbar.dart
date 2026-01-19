@@ -25,7 +25,7 @@ class _AutherAppBarState extends State<AutherAppBar> {
       pinned: true,
       snap: false,
       floating: false,
-      expandedHeight: 200.0,
+      expandedHeight: _isSearching ? null : 200.0,
       collapsedHeight: 56 + (_isSearching ? 8 : 0),
       flexibleSpace: FlexibleSpaceBar(
         title: !_isSearching ? Text('Auther') : Text(''),
