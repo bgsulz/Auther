@@ -43,6 +43,7 @@ class _AutherAppBarState extends State<AutherAppBar> {
       SizedBox(width: 16),
       Expanded(
         child: TextField(
+          autofocus: true,
           onChanged: (value) => widget.appState.notifyManual(),
           controller: widget.appState.searchController,
           decoration: InputDecoration(
