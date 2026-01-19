@@ -26,6 +26,10 @@ class AutherState extends ChangeNotifier {
   int _currentSeed = 0;
   StreamSubscription<int>? _tickerSub;
 
+  // Initialization tracking
+  final Completer<void> _initCompleter = Completer<void>();
+  Future<void> get initialized => _initCompleter.future;
+
   ThemeMode _themeMode = ThemeMode.system;
   static const _themeModeKey = 'theme_mode';
 
@@ -88,9 +92,14 @@ class AutherState extends ChangeNotifier {
 
   /// Whether biometric is valid (enabled and within timeout window)
   bool get biometricValid {
-    if (!_biometricEnabled || _biometricLastAuth == null) return false;
+    if (!_biometricEnabled || _biometricLastAuth == null) {
+      logger.info('[Biometric] biometricValid=false (enabled=$_biometricEnabled, lastAuth=$_biometricLastAuth)', 'AutherState');
+      return false;
+    }
     final elapsed = DateTime.now().difference(_biometricLastAuth!);
-    return elapsed.inDays < _biometricTimeoutDays;
+    final valid = elapsed.inDays < _biometricTimeoutDays;
+    logger.info('[Biometric] biometricValid=$valid (elapsed=${elapsed.inDays} days, timeout=$_biometricTimeoutDays days)', 'AutherState');
+    return valid;
   }
 
   /// Check if device supports biometrics
@@ -106,6 +115,7 @@ class AutherState extends ChangeNotifier {
 
   /// Enable or disable biometric authentication
   Future<void> setBiometricEnabled(bool enabled) async {
+    logger.info('[Biometric] setBiometricEnabled($enabled)', 'AutherState');
     _biometricEnabled = enabled;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_biometricEnabledKey, enabled);
@@ -120,6 +130,7 @@ class AutherState extends ChangeNotifier {
     _biometricLastAuth = DateTime.now();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt(_biometricLastAuthKey, _biometricLastAuth!.millisecondsSinceEpoch);
+    logger.info('[Biometric] recordBiometricAuth: $_biometricLastAuth (ms=${_biometricLastAuth!.millisecondsSinceEpoch})', 'AutherState');
   }
 
   /// Attempt biometric login, returns true if successful
@@ -165,6 +176,7 @@ class AutherState extends ChangeNotifier {
       if (lastAuthMs != null) {
         _biometricLastAuth = DateTime.fromMillisecondsSinceEpoch(lastAuthMs);
       }
+      logger.info('[Biometric] Loaded prefs: enabled=$_biometricEnabled, lastAuth=$_biometricLastAuth, lastAuthMs=$lastAuthMs', 'AutherState');
     } catch (e) {
       logger.error('Failed to load biometric preferences', e, null, 'AutherState');
     }
@@ -174,6 +186,8 @@ class AutherState extends ChangeNotifier {
       notifyListeners();
     });
     _ticker.start();
+    logger.info('[Biometric] AutherState initialization complete', 'AutherState');
+    _initCompleter.complete();
     notifyListeners();
   }
 

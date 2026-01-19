@@ -1,4 +1,5 @@
 import 'package:auther/customization/style.dart';
+import 'package:auther/services/logger.dart';
 
 import 'settings_screen.dart';
 import '../../state/auther_state.dart';
@@ -183,19 +184,38 @@ class _LoginFormState extends State<LoginForm> {
   }
 
   Future<void> _attemptBiometricLogin() async {
+    logger.info('[Biometric] _attemptBiometricLogin called, _biometricAttempted=$_biometricAttempted', 'LoginForm');
     if (_biometricAttempted) return;
     _biometricAttempted = true;
 
     final appState = Provider.of<AutherState>(context, listen: false);
-    if (!appState.biometricValid) {
+
+    // Wait for state initialization to complete before checking biometric
+    logger.info('[Biometric] Waiting for state initialization...', 'LoginForm');
+    await appState.initialized;
+    logger.info('[Biometric] State initialized, checking biometricValid...', 'LoginForm');
+
+    if (!mounted) {
+      logger.info('[Biometric] Widget not mounted after init, aborting', 'LoginForm');
+      return;
+    }
+
+    final isValid = appState.biometricValid;
+    logger.info('[Biometric] biometricValid=$isValid', 'LoginForm');
+
+    if (!isValid) {
+      logger.info('[Biometric] Showing passphrase form (biometric not valid)', 'LoginForm');
       setState(() => _showPassphraseForm = true);
       return;
     }
 
+    logger.info('[Biometric] Attempting biometric authentication...', 'LoginForm');
     final success = await appState.attemptBiometricLogin();
+    logger.info('[Biometric] Authentication result: $success', 'LoginForm');
     if (success && mounted) {
       Navigator.pushReplacementNamed(context, "/codes");
     } else if (mounted) {
+      logger.info('[Biometric] Showing passphrase form (auth failed or cancelled)', 'LoginForm');
       setState(() => _showPassphraseForm = true);
     }
   }
