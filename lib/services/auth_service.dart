@@ -26,12 +26,25 @@ class AutherAuth {
     var sha = sha256.convert(utf).toString();
     var code =
         BigInt.parse(sha, radix: 16).toString().padLeft(9, '0').substring(0, 9);
+    final wordCount = Words.words.length;
     var indices = [
-      int.parse(code.substring(0, 3)),
-      int.parse(code.substring(3, 6)),
-      int.parse(code.substring(6))
+      int.parse(code.substring(0, 3)) % wordCount,
+      int.parse(code.substring(3, 6)) % wordCount,
+      int.parse(code.substring(6)) % wordCount
     ];
     return indices.map((index) => Words.wordAt(index)).join(' ');
+  }
+
+  /// Gets the code that the user should SAY to verify their identity to another person.
+  /// This is the code the other person should HEAR.
+  static String getSayCode(String userHash, String personHash, int seed) {
+    return getOTP(personHash, userHash, seed);
+  }
+
+  /// Gets the code that the user should HEAR from another person.
+  /// This is the code the other person should SAY.
+  static String getHearCode(String userHash, String personHash, int seed) {
+    return getOTP(userHash, personHash, seed);
   }
 
   static bool compareAuthcodes(String truth, String entered) {
@@ -58,7 +71,7 @@ class AutherAuth {
     return {'slot': slot, 'userHash': hash};
   }
 
-  static bool isSlotAcceptable(int scannedSlot, int nowMillis, {int skew = 1}) {
+  static bool isSlotAcceptable(int scannedSlot, int nowMillis, {int skew = 2}) {
     final curr = currentSlot(nowMillis);
     return (scannedSlot - curr).abs() <= skew;
   }
@@ -94,7 +107,7 @@ class AutherAuth {
   }
 
   static Uint8List _pbkdf2(Uint8List password, Uint8List salt, int iterations, int dkLen) {
-    final hLen = 32;
+    const hLen = 32;
     final l = (dkLen / hLen).ceil();
     final r = dkLen - (l - 1) * hLen;
     final out = BytesBuilder();

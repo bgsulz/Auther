@@ -1,4 +1,5 @@
 import 'package:auther/models/person.dart';
+import 'package:auther/services/auth_service.dart';
 
 import 'appbar.dart';
 import '../../state/auther_state.dart';
@@ -42,7 +43,7 @@ class CodeListPage extends StatelessWidget {
       itemBuilder: (context, index) {
         final person = appState.visibleCodes[index];
         return Dismissible(
-          key: Key("${person.hashCode}"),
+          key: ValueKey(person.personHash),
           direction: DismissDirection.endToStart,
           confirmDismiss: (direction) async {
             return await _showConfirmDeletionDialog(context, appState, person);
@@ -121,6 +122,9 @@ class PersonCard extends StatelessWidget {
 
   Widget _buildAuthCode(BuildContext context, Person person, String userHash,
       int seed, bool isSaying) {
+    final code = isSaying
+        ? AutherAuth.getSayCode(userHash, person.personHash, seed)
+        : AutherAuth.getHearCode(userHash, person.personHash, seed);
     return Expanded(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -130,9 +134,7 @@ class PersonCard extends StatelessWidget {
             style: Theme.of(context).textTheme.bodyMedium,
           ),
           Text(
-            isSaying
-                ? person.sayAuthCode(userHash, seed).replaceAll(" ", "\n")
-                : person.hearAuthCode(userHash, seed).replaceAll(" ", "\n"),
+            code.replaceAll(" ", "\n"),
             style: Theme.of(context).textTheme.headlineLarge,
           ),
         ],
@@ -153,9 +155,14 @@ class PersonCard extends StatelessWidget {
               '/codes/edit',
               arguments: person,
             ),
-            onLongPress: () => Clipboard.setData(
-              ClipboardData(text: person.sayAuthCode(userHash, seed)),
-            ),
+            onLongPress: () {
+              final code = AutherAuth.getSayCode(userHash, person.personHash, seed);
+              Clipboard.setData(ClipboardData(text: code));
+              // Auto-clear clipboard after 60 seconds for security
+              Future.delayed(const Duration(seconds: 60), () {
+                Clipboard.setData(const ClipboardData(text: ''));
+              });
+            },
             child: Padding(
               padding: const EdgeInsets.all(16).copyWith(left: 64),
               child: Column(

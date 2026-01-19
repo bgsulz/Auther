@@ -1,9 +1,5 @@
-import 'dart:async';
 import 'dart:convert';
 import 'package:auther/models/person.dart';
-import 'package:auther/ui/widgets/codes.dart';
-import 'package:auther/customization/config.dart';
-import 'package:auther/state/auther_state.dart';
 
 class AutherData {
   AutherData.empty() : this(userHash: '', codes: []);

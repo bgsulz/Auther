@@ -153,11 +153,12 @@ class _CodeScanPageState extends State<CodeScanPage> {
     final hash = parsed['userHash'] as String;
     final slot = parsed['slot'] as int;
 
+    // Set flag before setState to prevent race condition with rapid scans
+    _didScan = true;
+
     HapticFeedback.vibrate();
 
-    setState(() {
-      _didScan = true;
-    });
+    setState(() {});
 
     _showConfirmSheet(context, hash, slot);
   }

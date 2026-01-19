@@ -174,7 +174,16 @@ class Settings {
     final result = await FilePicker.platform.pickFiles();
 
     if (result != null) {
-      File file = File(result.files.single.path!);
+      final filePath = result.files.single.path;
+      if (filePath == null) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Could not access selected file')),
+          );
+        }
+        return;
+      }
+      File file = File(filePath);
       await appState.loadFromFile(file);
       if (context.mounted) {
         Navigator.of(context).pushReplacementNamed('/codes');

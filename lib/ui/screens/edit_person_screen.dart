@@ -1,4 +1,5 @@
 import 'package:auther/models/person.dart';
+import 'package:auther/services/auth_service.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -34,7 +35,9 @@ class _EditPersonScreenState extends State<EditPersonScreen> {
     final personArg = ModalRoute.of(context)!.settings.arguments as Person?;
     if (personArg == null) {
       // If navigated without a person, just go back.
-      Future.microtask(() => Navigator.of(context).pop());
+      Future.microtask(() {
+        if (context.mounted) Navigator.of(context).pop();
+      });
       return const SizedBox.shrink();
     }
 
@@ -108,7 +111,7 @@ class _EditPersonScreenState extends State<EditPersonScreen> {
                 final confirm = await _confirmDelete(context, personArg);
                 if (confirm) {
                   appState.removePerson(personArg);
-                  if (mounted) Navigator.of(context).pop();
+                  if (context.mounted) Navigator.of(context).pop();
                 }
               },
               child: const Text('Delete this person\'s code'),
@@ -170,6 +173,9 @@ class _EditPersonScreenState extends State<EditPersonScreen> {
     }
 
     Widget buildAuth(bool isSaying) {
+      final code = isSaying
+          ? AutherAuth.getSayCode(userHash, person.personHash, seed)
+          : AutherAuth.getHearCode(userHash, person.personHash, seed);
       return Expanded(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -179,9 +185,7 @@ class _EditPersonScreenState extends State<EditPersonScreen> {
               style: Theme.of(context).textTheme.bodyMedium,
             ),
             Text(
-              isSaying
-                  ? person.sayAuthCode(userHash, seed).replaceAll(' ', '\n')
-                  : person.hearAuthCode(userHash, seed).replaceAll(' ', '\n'),
+              code.replaceAll(' ', '\n'),
               style: Theme.of(context).textTheme.headlineLarge,
             ),
           ],

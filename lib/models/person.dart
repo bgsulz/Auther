@@ -1,8 +1,9 @@
 import 'package:json_annotation/json_annotation.dart';
-import '../services/auth_service.dart';
 
 part 'person.g.dart';
 
+/// Pure data class representing a person in the user's contact list.
+/// Use AutherAuth.getSayCode/getHearCode for code generation.
 @JsonSerializable()
 class Person {
   final String personHash;
@@ -21,14 +22,6 @@ class Person {
       name: name ?? this.name,
       isBroken: isBroken ?? this.isBroken,
     );
-  }
-
-  String hearAuthCode(String userHash, int seed) {
-    return AutherAuth.getOTP(userHash, personHash, seed);
-  }
-
-  String sayAuthCode(String userHash, int seed) {
-    return AutherAuth.getOTP(personHash, userHash, seed);
   }
 
   factory Person.fromJson(Map<String, dynamic> json) => _$PersonFromJson(json);
