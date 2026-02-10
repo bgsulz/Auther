@@ -36,4 +36,19 @@ class Config {
     0xFF003F5C,
     0xFFFFA600,
   ];
+
+  static const Map<int, String> colorNames = {
+    0xFF1F77B4: 'Blue',
+    0xFFFF7F0E: 'Orange',
+    0xFF2CA02C: 'Green',
+    0xFFD62728: 'Red',
+    0xFF9467BD: 'Purple',
+    0xFF8C564B: 'Brown',
+    0xFFE377C2: 'Pink',
+    0xFF7F7F7F: 'Gray',
+    0xFFBCBD22: 'Yellow',
+    0xFF17BECF: 'Cyan',
+    0xFF003F5C: 'Navy',
+    0xFFFFA600: 'Amber',
+  };
 }

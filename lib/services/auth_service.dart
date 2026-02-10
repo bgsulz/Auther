@@ -89,6 +89,18 @@ class AutherAuth {
     return result;
   }
 
+  static List<String> colorNamesForSlot(int slot, {int? count}) {
+    final n = count ?? Config.colorStripCount;
+    final input = utf8.encode('$slot|Auther');
+    final h = sha256.convert(input).bytes;
+    final result = <String>[];
+    for (int i = 0; i < n; i++) {
+      final idx = h[i] % Config.colorPalette.length;
+      result.add(Config.colorNames[Config.colorPalette[idx]] ?? 'Unknown');
+    }
+    return result;
+  }
+
   static const int kdfIterations = 200000;
   static const int kdfKeyLength = 32;
   static const String kdfAlgo = 'pbkdf2-hmac-sha256';

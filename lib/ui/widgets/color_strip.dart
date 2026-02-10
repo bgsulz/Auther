@@ -11,7 +11,10 @@ class ColorStrip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = AutherAuth.colorsForSlot(slot, count: count);
-    return ClipRRect(
+    final names = AutherAuth.colorNamesForSlot(slot, count: count);
+    return Semantics(
+      label: 'Verification colors: ${names.join(', ')}',
+      child: ClipRRect(
       borderRadius: BorderRadius.circular(height / 2),
       child: Row(
         children: List.generate(colors.length, (i) {
@@ -22,6 +25,7 @@ class ColorStrip extends StatelessWidget {
             ),
           );
         }),
+      ),
       ),
     );
   }
