@@ -81,6 +81,7 @@ class PersonRepository {
     }
 
     _people.add(person);
+    _people.sort((a, b) => a.name.compareTo(b.name));
     final persistResult = await _persist();
     if (persistResult.isFailure) return persistResult;
     logger.info('Added person: ${person.name}', 'PersonRepository');

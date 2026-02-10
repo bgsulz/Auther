@@ -1,6 +1,7 @@
 import 'package:auther/models/person.dart';
 
 import '../../services/auth_service.dart';
+import '../../services/validators.dart';
 import '../../state/auther_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -155,6 +156,14 @@ class _ConfirmSheetContentState extends State<_ConfirmSheetContent> {
     super.dispose();
   }
 
+  void _validateAndSave() {
+    final result = Validators.validatePersonName(_nameController.text);
+    result.when(
+      success: (trimmedName) => widget.onSave(widget.hash, trimmedName),
+      failure: (msg, _) => ErrorSnackbar.showError(context, msg),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -214,21 +223,13 @@ class _ConfirmSheetContentState extends State<_ConfirmSheetContent> {
                 ),
                 controller: _nameController,
                 autofocus: true,
-                onFieldSubmitted: (value) {
-                  if (_nameController.text.isNotEmpty) {
-                    widget.onSave(widget.hash, _nameController.text);
-                  }
-                },
+                onFieldSubmitted: (_) => _validateAndSave(),
               ),
               const SizedBox(height: 12),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () {
-                    if (_nameController.text.isNotEmpty) {
-                      widget.onSave(widget.hash, _nameController.text);
-                    }
-                  },
+                  onPressed: _validateAndSave,
                   child: const Text('Save'),
                 ),
               ),
