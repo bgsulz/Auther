@@ -144,7 +144,6 @@ class PersonCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // print("Rebuilding for person ${person.name} at ${DateTime.now()}.");
     return Card(
       clipBehavior: Clip.antiAlias,
       child: Stack(

@@ -3,7 +3,6 @@ import 'package:auther/models/person.dart';
 
 class AutherData {
   AutherData.empty() : this(userHash: '', codes: []);
-  bool get isEmpty => userHash.isEmpty && codes.isEmpty;
 
   String userHash = '';
   List<Person> codes = [];
@@ -29,15 +28,4 @@ class AutherData {
       };
 
   String toJsonString() => jsonEncode(toJson());
-
-  List<Person> getVisibleCodes(String text) {
-    if (text.isEmpty) {
-      return codes;
-    } else {
-      final textClean = text.toLowerCase().trim();
-      return codes
-          .where((e) => e.name.toLowerCase().contains(textClean))
-          .toList();
-    }
-  }
 }

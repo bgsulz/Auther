@@ -13,11 +13,6 @@ class AutherAuth {
     return sha256.convert(Utf8Encoder().convert(value)).toString();
   }
 
-  static String qrFromHash(String userHash) => "AutherCode_$userHash";
-  static String hashFromQr(String value) =>
-      value.replaceFirst("AutherCode_", "");
-
-  static bool isPlausibleQr(String value) => isPlausibleHash(hashFromQr(value));
   static bool isPlausibleHash(String value) =>
       value.length == 64 && RegExp(r'^[0-9a-f]+$').hasMatch(value);
 
