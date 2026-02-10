@@ -6,7 +6,7 @@ class Validators {
   Validators._(); // Prevent instantiation
 
   /// Minimum passphrase length
-  static const int minPassphraseLength = 4;
+  static const int minPassphraseLength = 8;
 
   /// Maximum passphrase length (prevent DoS with PBKDF2)
   static const int maxPassphraseLength = 1000;
