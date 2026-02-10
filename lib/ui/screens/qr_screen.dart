@@ -11,8 +11,8 @@ class QRCodePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final appData = Provider.of<AutherState>(context);
-    final now = DateTime.now().millisecondsSinceEpoch;
-    final slot = AutherAuth.currentSlot(now);
+    final seedMs = appData.seed != 0 ? appData.seed : DateTime.now().millisecondsSinceEpoch;
+    final slot = AutherAuth.currentSlot(seedMs);
     return Scaffold(
       appBar: AppBar(
         title: Text('Your code'),
