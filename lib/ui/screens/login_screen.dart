@@ -212,9 +212,10 @@ class _LoginFormState extends State<LoginForm> {
     logger.info('[Biometric] Attempting biometric authentication...', 'LoginForm');
     final success = await appState.attemptBiometricLogin();
     logger.info('[Biometric] Authentication result: $success', 'LoginForm');
-    if (success && mounted) {
+    if (!mounted) return;
+    if (success) {
       Navigator.pushReplacementNamed(context, "/codes");
-    } else if (mounted) {
+    } else {
       logger.info('[Biometric] Showing passphrase form (auth failed or cancelled)', 'LoginForm');
       setState(() => _showPassphraseForm = true);
     }
@@ -265,20 +266,18 @@ class _LoginFormState extends State<LoginForm> {
   void _onFieldSubmitted(BuildContext context, AutherState appState, String value) async {
     if (!_formKey.currentState!.validate()) return;
     final ok = await appState.validatePassphrase(value);
+    if (!context.mounted) return;
     if (ok) {
       // Reset biometric timer if biometric was previously enabled
       if (appState.biometricEnabled) {
         await appState.recordBiometricAuth();
+        if (!context.mounted) return;
       }
-      if (context.mounted) {
-        Navigator.pushReplacementNamed(context, "/codes");
-      }
+      Navigator.pushReplacementNamed(context, "/codes");
     } else {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Invalid passphrase')),
-        );
-      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Invalid passphrase')),
+      );
     }
   }
 }

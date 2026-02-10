@@ -108,6 +108,20 @@ class _CodeScanPageState extends State<CodeScanPage> {
         children: [
           MobileScanner(
             onDetect: _handleBarcode,
+            errorBuilder: (context, error, child) {
+              return Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(32),
+                  child: Text(
+                    error.errorCode == MobileScannerErrorCode.permissionDenied
+                        ? 'Camera permission is required to scan QR codes. Please grant camera access in your device settings.'
+                        : 'Could not start camera.',
+                    style: const TextStyle(color: Colors.white),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              );
+            },
           ),
         ],
       ),
