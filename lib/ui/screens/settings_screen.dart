@@ -205,20 +205,28 @@ class Settings {
   static Future<void> export(BuildContext context) async {
     final appState = Provider.of<AutherState>(context, listen: false);
 
-    var filename = 'auther_data_${_generateTimecode()}.json';
-    var file = await FilePicker.platform.saveFile(
-        dialogTitle: 'Save Auther data',
-        fileName: filename,
-        bytes: utf8.encode(appState.dataJson));
+    try {
+      var filename = 'auther_data_${_generateTimecode()}.json';
+      var file = await FilePicker.platform.saveFile(
+          dialogTitle: 'Save Auther data',
+          fileName: filename,
+          bytes: utf8.encode(appState.dataJson));
 
-    if (context.mounted) {
-      if (file == null) {
+      if (context.mounted) {
+        if (file == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Auther export canceled')),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Auther data exported successfully!')),
+          );
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Auther export canceled')),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Auther data exported successfully!')),
+          SnackBar(content: Text('Export failed: could not save file')),
         );
       }
     }
@@ -226,30 +234,39 @@ class Settings {
 
   static Future<void> import(BuildContext context) async {
     final appState = Provider.of<AutherState>(context, listen: false);
-    final result = await FilePicker.platform.pickFiles();
 
-    if (result != null) {
-      final filePath = result.files.single.path;
-      if (filePath == null) {
+    try {
+      final result = await FilePicker.platform.pickFiles();
+
+      if (result != null) {
+        final filePath = result.files.single.path;
+        if (filePath == null) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Could not access selected file')),
+            );
+          }
+          return;
+        }
+        File file = File(filePath);
+        await appState.loadFromFile(file);
         if (context.mounted) {
+          Navigator.of(context).pushReplacementNamed('/codes');
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Could not access selected file')),
+            SnackBar(content: Text('Auther data successfully imported!')),
           );
         }
-        return;
-      }
-      File file = File(filePath);
-      await appState.loadFromFile(file);
-      if (context.mounted) {
-        Navigator.of(context).pushReplacementNamed('/codes');
+      } else if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Auther data successfully imported!')),
+          SnackBar(content: Text('Auther data import canceled')),
         );
       }
-    } else if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Auther data import canceled')),
-      );
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Import failed: could not read file')),
+        );
+      }
     }
   }
 

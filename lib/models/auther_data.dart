@@ -14,14 +14,14 @@ class AutherData {
   });
 
   factory AutherData.fromJson(Map<String, dynamic> json, String hash) {
-    try {
-      return AutherData(
-        userHash: hash,
-        codes: List<Person>.from(json['codes'].map((x) => Person.fromJson(x))),
-      );
-    } catch (e) {
-      return AutherData.empty();
+    final codesJson = json['codes'];
+    if (codesJson == null || codesJson is! List) {
+      return AutherData(userHash: hash, codes: []);
     }
+    return AutherData(
+      userHash: hash,
+      codes: List<Person>.from(codesJson.map((x) => Person.fromJson(x))),
+    );
   }
 
   Map<String, dynamic> toJson() => {

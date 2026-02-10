@@ -14,15 +14,23 @@ class FileAutherRepository implements AutherRepository {
 
   @override
   Future<String?> loadData() async {
-    final file = await _dataFile;
-    final contents = await file.readAsString();
-    return contents.isEmpty ? '{}' : contents;
+    try {
+      final file = await _dataFile;
+      final contents = await file.readAsString();
+      return contents.isEmpty ? '{}' : contents;
+    } on FileSystemException catch (e) {
+      throw FileSystemException('Failed to read data file', e.path, e.osError);
+    }
   }
 
   @override
   Future<void> saveData(String json) async {
-    final file = await _dataFile;
-    await file.writeAsString(json);
+    try {
+      final file = await _dataFile;
+      await file.writeAsString(json);
+    } on FileSystemException catch (e) {
+      throw FileSystemException('Failed to write data file', e.path, e.osError);
+    }
   }
 
   @override
