@@ -64,9 +64,13 @@ class AutherState extends ChangeNotifier {
   String get userHash => _personRepository.userHash;
 
   /// Sets user hash (triggers persist)
-  set userHash(String hash) {
+  Future<void> setUserHash(String hash) async {
     _personRepository.userHash = hash;
-    _personRepository.persist();
+    final result = await _personRepository.persist();
+    result.when(
+      success: (_) {},
+      failure: (msg, _) => logger.error('Failed to persist after setting user hash: $msg', null, null, 'AutherState'),
+    );
     notifyListeners();
   }
 
@@ -193,40 +197,40 @@ class AutherState extends ChangeNotifier {
 
   // --- Person Operations ---
 
-  void addPerson(Person person) {
-    final result = _personRepository.addPerson(person);
+  Future<void> addPerson(Person person) async {
+    final result = await _personRepository.addPerson(person);
     result.when(
       success: (_) => notifyListeners(),
       failure: (msg, _) => logger.warn('Failed to add person: $msg', 'AutherState'),
     );
   }
 
-  void removePersonAt(int index) {
-    final result = _personRepository.removePersonAt(index);
+  Future<void> removePersonAt(int index) async {
+    final result = await _personRepository.removePersonAt(index);
     result.when(
       success: (_) => notifyListeners(),
       failure: (msg, _) => logger.warn('Failed to remove person: $msg', 'AutherState'),
     );
   }
 
-  void removePerson(Person person) {
-    final result = _personRepository.removePerson(person.personHash);
+  Future<void> removePerson(Person person) async {
+    final result = await _personRepository.removePerson(person.personHash);
     result.when(
       success: (_) => notifyListeners(),
       failure: (msg, _) => logger.warn('Failed to remove person: $msg', 'AutherState'),
     );
   }
 
-  void reorderPerson(int oldIndex, int newIndex) {
-    final result = _personRepository.reorderPerson(oldIndex, newIndex);
+  Future<void> reorderPerson(int oldIndex, int newIndex) async {
+    final result = await _personRepository.reorderPerson(oldIndex, newIndex);
     result.when(
       success: (_) => notifyListeners(),
       failure: (msg, _) => logger.warn('Failed to reorder person: $msg', 'AutherState'),
     );
   }
 
-  void editPersonName(Person person, String text) {
-    final result = _personRepository.editPersonName(person.personHash, text);
+  Future<void> editPersonName(Person person, String text) async {
+    final result = await _personRepository.editPersonName(person.personHash, text);
     result.when(
       success: (_) => notifyListeners(),
       failure: (msg, _) => logger.warn('Failed to edit person name: $msg', 'AutherState'),
@@ -237,11 +241,12 @@ class AutherState extends ChangeNotifier {
     final personHash = AutherAuth.hashPassphrase(passphrase);
     final isSame = personHash == person.personHash;
     if (isSame) {
-      final result = _personRepository.markAsBroken(person.personHash);
-      result.when(
-        success: (_) => notifyListeners(),
-        failure: (_, __) {},
-      );
+      _personRepository.markAsBroken(person.personHash).then((result) {
+        result.when(
+          success: (_) => notifyListeners(),
+          failure: (_, __) {},
+        );
+      });
     }
     return isSame;
   }
@@ -250,14 +255,17 @@ class AutherState extends ChangeNotifier {
 
   Future<void> setPassphrase(String passphrase) async {
     final result = await _passphraseService.setPassphrase(passphrase);
-    result.when(
-      success: (derivedKeyHex) {
-        _personRepository.userHash = derivedKeyHex;
-        _personRepository.persist();
-        notifyListeners();
-      },
-      failure: (msg, _) => logger.error('Failed to set passphrase: $msg', null, null, 'AutherState'),
+    if (result.isFailure) {
+      logger.error('Failed to set passphrase: ${result.errorOrNull}', null, null, 'AutherState');
+      return;
+    }
+    _personRepository.userHash = result.valueOrNull!;
+    final persistResult = await _personRepository.persist();
+    persistResult.when(
+      success: (_) {},
+      failure: (msg, _) => logger.error('Failed to persist after setting passphrase: $msg', null, null, 'AutherState'),
     );
+    notifyListeners();
   }
 
   Future<bool> validatePassphrase(String passphrase) async {
@@ -283,8 +291,12 @@ class AutherState extends ChangeNotifier {
     notifyListeners();
   }
 
-  void update() {
-    _personRepository.persist();
+  Future<void> update() async {
+    final result = await _personRepository.persist();
+    result.when(
+      success: (_) {},
+      failure: (msg, _) => logger.error('Failed to persist during update: $msg', null, null, 'AutherState'),
+    );
     notifyListeners();
   }
 

@@ -64,7 +64,7 @@ class PersonRepository {
   }
 
   /// Adds a new person.
-  Result<void> addPerson(Person person) {
+  Future<Result<void>> addPerson(Person person) async {
     final validation = Validators.validatePersonName(person.name);
     if (validation.isFailure) {
       return Failure(validation.errorOrNull ?? 'Invalid name');
@@ -81,39 +81,42 @@ class PersonRepository {
     }
 
     _people.add(person);
-    _persist();
+    final persistResult = await _persist();
+    if (persistResult.isFailure) return persistResult;
     logger.info('Added person: ${person.name}', 'PersonRepository');
     return const Success(null);
   }
 
   /// Removes a person by their hash.
-  Result<void> removePerson(String personHash) {
+  Future<Result<void>> removePerson(String personHash) async {
     final index = _people.indexWhere((p) => p.personHash == personHash);
     if (index == -1) {
       return const Failure('Person not found');
     }
 
     final removed = _people.removeAt(index);
-    _persist();
+    final persistResult = await _persist();
+    if (persistResult.isFailure) return persistResult;
     logger.info('Removed person: ${removed.name}', 'PersonRepository');
     return const Success(null);
   }
 
   /// Removes a person at the given index.
-  Result<void> removePersonAt(int index) {
+  Future<Result<void>> removePersonAt(int index) async {
     if (index < 0 || index >= _people.length) {
       return const Failure('Invalid index');
     }
 
     final removed = _people.removeAt(index);
-    _persist();
+    final persistResult = await _persist();
+    if (persistResult.isFailure) return persistResult;
     logger.info('Removed person at index $index: ${removed.name}', 'PersonRepository');
     return const Success(null);
   }
 
   /// Edits a person's name by their hash.
   /// Uses indexWhere to find by hash (fixes indexOf bug from original).
-  Result<void> editPersonName(String personHash, String newName) {
+  Future<Result<void>> editPersonName(String personHash, String newName) async {
     final validation = Validators.validatePersonName(newName);
     if (validation.isFailure) {
       return Failure(validation.errorOrNull ?? 'Invalid name');
@@ -126,13 +129,14 @@ class PersonRepository {
 
     _people[index] = Person(name: validation.valueOrNull!, personHash: personHash);
     _people.sort((a, b) => a.name.compareTo(b.name));
-    _persist();
+    final persistResult = await _persist();
+    if (persistResult.isFailure) return persistResult;
     logger.info('Edited person name to: ${validation.valueOrNull}', 'PersonRepository');
     return const Success(null);
   }
 
   /// Reorders a person from oldIndex to newIndex.
-  Result<void> reorderPerson(int oldIndex, int newIndex) {
+  Future<Result<void>> reorderPerson(int oldIndex, int newIndex) async {
     if (oldIndex < 0 || oldIndex >= _people.length) {
       return const Failure('Invalid old index');
     }
@@ -146,19 +150,21 @@ class PersonRepository {
 
     final item = _people.removeAt(oldIndex);
     _people.insert(newIndex, item);
-    _persist();
+    final persistResult = await _persist();
+    if (persistResult.isFailure) return persistResult;
     return const Success(null);
   }
 
   /// Marks a person as broken (emergency passphrase match).
-  Result<void> markAsBroken(String personHash) {
+  Future<Result<void>> markAsBroken(String personHash) async {
     final index = _people.indexWhere((p) => p.personHash == personHash);
     if (index == -1) {
       return const Failure('Person not found');
     }
 
     _people[index] = _people[index].copyWith(isBroken: true);
-    _persist();
+    final persistResult = await _persist();
+    if (persistResult.isFailure) return persistResult;
     logger.info('Marked person as broken', 'PersonRepository');
     return const Success(null);
   }
@@ -184,17 +190,19 @@ class PersonRepository {
   }
 
   /// Persists current state to storage.
-  Future<void> _persist() async {
+  Future<Result<void>> _persist() async {
     try {
       final data = AutherData(codes: _people)..userHash = _userHash;
       await _dataRepository.saveData(data.toJsonString());
+      return const Success(null);
     } catch (e) {
       logger.error('Failed to persist data', e, null, 'PersonRepository');
+      return Failure('Failed to persist data', e);
     }
   }
 
   /// Forces a persist (for external callers when userHash changes).
-  Future<void> persist() => _persist();
+  Future<Result<void>> persist() => _persist();
 
   /// Gets visible codes filtered by search text.
   List<Person> getVisibleCodes(String searchText) {
