@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:provider/provider.dart';
 import '../widgets/color_strip.dart';
+import '../widgets/error_snackbar.dart';
 
 class CodeScanPage extends StatefulWidget {
   const CodeScanPage({super.key});
@@ -18,6 +19,7 @@ class CodeScanPage extends StatefulWidget {
 class _CodeScanPageState extends State<CodeScanPage> {
   bool _didScan = false;
   bool _isSimulation = false;
+  DateTime _lastErrorTime = DateTime(0);
 
   @override
   void didChangeDependencies() {
@@ -74,9 +76,15 @@ class _CodeScanPageState extends State<CodeScanPage> {
     var qr = found.displayValue;
     if (qr == null) return;
     final parsed = AutherAuth.parseQr(qr);
-    if (parsed == null) return;
+    if (parsed == null) {
+      _showScanError('Not a valid Auther QR code');
+      return;
+    }
     final now = DateTime.now().millisecondsSinceEpoch;
-    if (!AutherAuth.isSlotAcceptable(parsed['slot'] as int, now)) return;
+    if (!AutherAuth.isSlotAcceptable(parsed['slot'] as int, now)) {
+      _showScanError('QR code has expired — ask them to refresh');
+      return;
+    }
     final hash = parsed['userHash'] as String;
     final slot = parsed['slot'] as int;
 
@@ -103,6 +111,13 @@ class _CodeScanPageState extends State<CodeScanPage> {
         ],
       ),
     );
+  }
+
+  void _showScanError(String message) {
+    final now = DateTime.now();
+    if (now.difference(_lastErrorTime).inSeconds < 2) return;
+    _lastErrorTime = now;
+    ErrorSnackbar.showError(context, message);
   }
 
   void _savePerson(String hash, String name) {
