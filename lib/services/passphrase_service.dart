@@ -23,7 +23,13 @@ class PassphraseService {
 
     try {
       final rec = AutherAuth.deriveCredentials(validation.valueOrNull!);
-      await _secureStorage.setPassphrase(jsonEncode(rec));
+      final storageResult =
+          await _secureStorage.setPassphrase(jsonEncode(rec));
+      if (storageResult.isFailure) {
+        return Failure(
+            storageResult.errorOrNull ?? 'Failed to save passphrase',
+            (storageResult as Failure).error);
+      }
       final derivedKeyHex = rec['derivedKeyHex'] as String;
       logger.info('Passphrase set successfully', 'PassphraseService');
       return Success(derivedKeyHex);
@@ -37,24 +43,26 @@ class PassphraseService {
   /// Returns Success(true) if valid, Success(false) if invalid,
   /// or Failure if there's an error.
   Future<Result<bool>> validatePassphrase(String passphrase) async {
-    try {
-      final stored = await _secureStorage.getPassphrase();
-      if (stored == null || stored.isEmpty) {
-        return const Success(false);
-      }
+    final storageResult = await _secureStorage.getPassphrase();
+    if (storageResult.isFailure) {
+      return Failure(
+          storageResult.errorOrNull ?? 'Failed to read passphrase',
+          (storageResult as Failure).error);
+    }
 
-      try {
-        final rec = jsonDecode(stored) as Map<String, dynamic>;
-        final isValid = AutherAuth.verifyPassphrase(passphrase, rec);
-        return Success(isValid);
-      } catch (_) {
-        // Legacy format fallback removed per plan - just return false
-        logger.warn('Legacy passphrase format encountered', 'PassphraseService');
-        return const Success(false);
-      }
-    } catch (e) {
-      logger.error('Failed to validate passphrase', e, null, 'PassphraseService');
-      return Failure('Failed to validate passphrase', e);
+    final stored = storageResult.valueOrNull;
+    if (stored == null || stored.isEmpty) {
+      return const Success(false);
+    }
+
+    try {
+      final rec = jsonDecode(stored) as Map<String, dynamic>;
+      final isValid = AutherAuth.verifyPassphrase(passphrase, rec);
+      return Success(isValid);
+    } catch (_) {
+      // Legacy format fallback removed per plan - just return false
+      logger.warn('Legacy passphrase format encountered', 'PassphraseService');
+      return const Success(false);
     }
   }
 
@@ -62,23 +70,25 @@ class PassphraseService {
   /// Returns Success with the hash, Success with empty string if none,
   /// or Failure on error.
   Future<Result<String>> getStoredHash() async {
-    try {
-      final stored = await _secureStorage.getPassphrase();
-      if (stored == null || stored.isEmpty) {
-        return const Success('');
-      }
+    final storageResult = await _secureStorage.getPassphrase();
+    if (storageResult.isFailure) {
+      return Failure(
+          storageResult.errorOrNull ?? 'Failed to retrieve stored credentials',
+          (storageResult as Failure).error);
+    }
 
-      try {
-        final rec = jsonDecode(stored) as Map<String, dynamic>;
-        final hash = rec['derivedKeyHex'] as String? ?? '';
-        return Success(hash);
-      } catch (_) {
-        // Legacy format - return as-is (will fail validation anyway)
-        return Success(stored);
-      }
-    } catch (e) {
-      logger.error('Failed to get stored hash', e, null, 'PassphraseService');
-      return Failure('Failed to retrieve stored credentials', e);
+    final stored = storageResult.valueOrNull;
+    if (stored == null || stored.isEmpty) {
+      return const Success('');
+    }
+
+    try {
+      final rec = jsonDecode(stored) as Map<String, dynamic>;
+      final hash = rec['derivedKeyHex'] as String? ?? '';
+      return Success(hash);
+    } catch (_) {
+      // Legacy format - return as-is (will fail validation anyway)
+      return Success(stored);
     }
   }
 
@@ -90,13 +100,13 @@ class PassphraseService {
 
   /// Deletes the stored passphrase.
   Future<Result<void>> deletePassphrase() async {
-    try {
-      await _secureStorage.deletePassphrase();
-      logger.info('Passphrase deleted', 'PassphraseService');
-      return const Success(null);
-    } catch (e) {
-      logger.error('Failed to delete passphrase', e, null, 'PassphraseService');
-      return Failure('Failed to delete passphrase', e);
+    final storageResult = await _secureStorage.deletePassphrase();
+    if (storageResult.isFailure) {
+      return Failure(
+          storageResult.errorOrNull ?? 'Failed to delete passphrase',
+          (storageResult as Failure).error);
     }
+    logger.info('Passphrase deleted', 'PassphraseService');
+    return const Success(null);
   }
 }
