@@ -8,8 +8,6 @@ class AuthTicker {
   final StreamController<int> _seedController = StreamController.broadcast();
   Timer? _periodic;
   Timer? _initialTimer;
-  int _initialSeed = 0;
-  int _offsetCount = 0;
   bool _isDisposed = false;
 
   Stream<int> get seedStream => _seedController.stream;
@@ -25,30 +23,28 @@ class AuthTicker {
     _initialTimer?.cancel();
 
     final now = DateTime.now().millisecondsSinceEpoch;
-    final timeUntilNextMultiple = Config.intervalMillis - (now % Config.intervalMillis);
-    _initialSeed = now + timeUntilNextMultiple;
-    _offsetCount = 0;
-
-    // Emit the first seed immediately so consumers can render a determinate countdown.
-    if (!_seedController.isClosed) {
-      _seedController.add(_initialSeed);
-    }
+    final timeUntilNextMultiple =
+        Config.intervalMillis - (now % Config.intervalMillis);
+    _emitNextSeed();
 
     // Fire first after the delay
     _initialTimer = Timer(Duration(milliseconds: timeUntilNextMultiple), () {
       if (_isDisposed) return;
-      _tick();
-      _periodic = Timer.periodic(Duration(milliseconds: Config.intervalMillis), (_) {
+      _emitNextSeed();
+      _periodic =
+          Timer.periodic(Duration(milliseconds: Config.intervalMillis), (_) {
         if (_isDisposed) return;
-        _tick();
+        _emitNextSeed();
       });
     });
   }
 
-  void _tick() {
+  void _emitNextSeed() {
     if (_isDisposed || _seedController.isClosed) return;
-    _offsetCount++;
-    final seed = _initialSeed + (Config.intervalMillis * _offsetCount);
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final timeUntilNextMultiple =
+        Config.intervalMillis - (now % Config.intervalMillis);
+    final seed = now + timeUntilNextMultiple;
     _seedController.add(seed);
   }
 

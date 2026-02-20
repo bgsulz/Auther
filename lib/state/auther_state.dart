@@ -16,7 +16,7 @@ import '../customization/config.dart';
 /// Main application state that coordinates services and notifies UI.
 /// Refactored to delegate to focused services rather than implementing
 /// all logic directly.
-class AutherState extends ChangeNotifier {
+class AutherState extends ChangeNotifier with WidgetsBindingObserver {
   final searchController = TextEditingController();
 
   final PersonRepository _personRepository;
@@ -48,6 +48,7 @@ class AutherState extends ChangeNotifier {
   })  : _personRepository = PersonRepository(dataRepository: repository),
         _passphraseService = PassphraseService(secureStorage: secureStorage),
         _ticker = ticker {
+    WidgetsBinding.instance.addObserver(this);
     _init();
   }
 
@@ -69,7 +70,11 @@ class AutherState extends ChangeNotifier {
     final result = await _personRepository.persist();
     result.when(
       success: (_) {},
-      failure: (msg, _) => logger.error('Failed to persist after setting user hash: $msg', null, null, 'AutherState'),
+      failure: (msg, _) => logger.error(
+          'Failed to persist after setting user hash: $msg',
+          null,
+          null,
+          'AutherState'),
     );
     notifyListeners();
   }
@@ -97,12 +102,16 @@ class AutherState extends ChangeNotifier {
   /// Whether biometric is valid (enabled and within timeout window)
   bool get biometricValid {
     if (!_biometricEnabled || _biometricLastAuth == null) {
-      logger.info('[Biometric] biometricValid=false (enabled=$_biometricEnabled, lastAuth=$_biometricLastAuth)', 'AutherState');
+      logger.info(
+          '[Biometric] biometricValid=false (enabled=$_biometricEnabled, lastAuth=$_biometricLastAuth)',
+          'AutherState');
       return false;
     }
     final elapsed = DateTime.now().difference(_biometricLastAuth!);
     final valid = elapsed.inDays < _biometricTimeoutDays;
-    logger.info('[Biometric] biometricValid=$valid (elapsed=${elapsed.inDays} days, timeout=$_biometricTimeoutDays days)', 'AutherState');
+    logger.info(
+        '[Biometric] biometricValid=$valid (elapsed=${elapsed.inDays} days, timeout=$_biometricTimeoutDays days)',
+        'AutherState');
     return valid;
   }
 
@@ -133,8 +142,11 @@ class AutherState extends ChangeNotifier {
   Future<void> recordBiometricAuth() async {
     _biometricLastAuth = DateTime.now();
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt(_biometricLastAuthKey, _biometricLastAuth!.millisecondsSinceEpoch);
-    logger.info('[Biometric] recordBiometricAuth: $_biometricLastAuth (ms=${_biometricLastAuth!.millisecondsSinceEpoch})', 'AutherState');
+    await prefs.setInt(
+        _biometricLastAuthKey, _biometricLastAuth!.millisecondsSinceEpoch);
+    logger.info(
+        '[Biometric] recordBiometricAuth: $_biometricLastAuth (ms=${_biometricLastAuth!.millisecondsSinceEpoch})',
+        'AutherState');
   }
 
   /// Attempt biometric login, returns true if successful
@@ -153,17 +165,22 @@ class AutherState extends ChangeNotifier {
     try {
       final hashResult = await _passphraseService.getStoredHash();
       if (hashResult.isFailure) {
-        logger.warn('getStoredHash failed: ${hashResult.errorOrNull}', 'AutherState');
+        logger.warn(
+            'getStoredHash failed: ${hashResult.errorOrNull}', 'AutherState');
       }
       final hash = hashResult.valueOr('');
       if (hash.isEmpty) {
-        logger.info('getStoredHash returned empty (new user or storage issue)', 'AutherState');
+        logger.info('getStoredHash returned empty (new user or storage issue)',
+            'AutherState');
       }
       final loadResult = await _personRepository.load(hash);
       if (loadResult.isFailure) {
-        logger.error('PersonRepository.load failed: ${loadResult.errorOrNull}', null, null, 'AutherState');
+        logger.error('PersonRepository.load failed: ${loadResult.errorOrNull}',
+            null, null, 'AutherState');
       }
-      logger.info('Initialization complete: userHash=${_personRepository.userHash.isEmpty ? "(empty)" : "present (${_personRepository.userHash.length} chars)"}', 'AutherState');
+      logger.info(
+          'Initialization complete: userHash=${_personRepository.userHash.isEmpty ? "(empty)" : "present (${_personRepository.userHash.length} chars)"}',
+          'AutherState');
     } catch (e) {
       logger.error('Failed to initialize state', e, null, 'AutherState');
     }
@@ -190,9 +207,12 @@ class AutherState extends ChangeNotifier {
       if (lastAuthMs != null) {
         _biometricLastAuth = DateTime.fromMillisecondsSinceEpoch(lastAuthMs);
       }
-      logger.info('[Biometric] Loaded prefs: enabled=$_biometricEnabled, lastAuth=$_biometricLastAuth, lastAuthMs=$lastAuthMs', 'AutherState');
+      logger.info(
+          '[Biometric] Loaded prefs: enabled=$_biometricEnabled, lastAuth=$_biometricLastAuth, lastAuthMs=$lastAuthMs',
+          'AutherState');
     } catch (e) {
-      logger.error('Failed to load biometric preferences', e, null, 'AutherState');
+      logger.error(
+          'Failed to load biometric preferences', e, null, 'AutherState');
     }
 
     _tickerSub = _ticker.seedStream.listen((seed) {
@@ -200,7 +220,8 @@ class AutherState extends ChangeNotifier {
       notifyListeners();
     });
     _ticker.start();
-    logger.info('[Biometric] AutherState initialization complete', 'AutherState');
+    logger.info(
+        '[Biometric] AutherState initialization complete', 'AutherState');
     _initCompleter.complete();
     notifyListeners();
   }
@@ -211,7 +232,8 @@ class AutherState extends ChangeNotifier {
     final result = await _personRepository.addPerson(person);
     result.when(
       success: (_) => notifyListeners(),
-      failure: (msg, _) => logger.warn('Failed to add person: $msg', 'AutherState'),
+      failure: (msg, _) =>
+          logger.warn('Failed to add person: $msg', 'AutherState'),
     );
   }
 
@@ -219,7 +241,8 @@ class AutherState extends ChangeNotifier {
     final result = await _personRepository.removePersonAt(index);
     result.when(
       success: (_) => notifyListeners(),
-      failure: (msg, _) => logger.warn('Failed to remove person: $msg', 'AutherState'),
+      failure: (msg, _) =>
+          logger.warn('Failed to remove person: $msg', 'AutherState'),
     );
   }
 
@@ -227,7 +250,8 @@ class AutherState extends ChangeNotifier {
     final result = await _personRepository.removePerson(person.personHash);
     result.when(
       success: (_) => notifyListeners(),
-      failure: (msg, _) => logger.warn('Failed to remove person: $msg', 'AutherState'),
+      failure: (msg, _) =>
+          logger.warn('Failed to remove person: $msg', 'AutherState'),
     );
   }
 
@@ -235,15 +259,18 @@ class AutherState extends ChangeNotifier {
     final result = await _personRepository.reorderPerson(oldIndex, newIndex);
     result.when(
       success: (_) => notifyListeners(),
-      failure: (msg, _) => logger.warn('Failed to reorder person: $msg', 'AutherState'),
+      failure: (msg, _) =>
+          logger.warn('Failed to reorder person: $msg', 'AutherState'),
     );
   }
 
   Future<void> editPersonName(Person person, String text) async {
-    final result = await _personRepository.editPersonName(person.personHash, text);
+    final result =
+        await _personRepository.editPersonName(person.personHash, text);
     result.when(
       success: (_) => notifyListeners(),
-      failure: (msg, _) => logger.warn('Failed to edit person name: $msg', 'AutherState'),
+      failure: (msg, _) =>
+          logger.warn('Failed to edit person name: $msg', 'AutherState'),
     );
   }
 
@@ -266,14 +293,19 @@ class AutherState extends ChangeNotifier {
   Future<void> setPassphrase(String passphrase) async {
     final result = await _passphraseService.setPassphrase(passphrase);
     if (result.isFailure) {
-      logger.error('Failed to set passphrase: ${result.errorOrNull}', null, null, 'AutherState');
+      logger.error('Failed to set passphrase: ${result.errorOrNull}', null,
+          null, 'AutherState');
       return;
     }
     _personRepository.userHash = result.valueOrNull!;
     final persistResult = await _personRepository.persist();
     persistResult.when(
       success: (_) {},
-      failure: (msg, _) => logger.error('Failed to persist after setting passphrase: $msg', null, null, 'AutherState'),
+      failure: (msg, _) => logger.error(
+          'Failed to persist after setting passphrase: $msg',
+          null,
+          null,
+          'AutherState'),
     );
     notifyListeners();
   }
@@ -296,8 +328,11 @@ class AutherState extends ChangeNotifier {
 
     // Check if userHash needs recovery
     final currentUserHash = _personRepository.userHash;
-    if (currentUserHash.isEmpty || !AutherAuth.isPlausibleHash(currentUserHash)) {
-      logger.info('userHash is invalid/empty, attempting recovery from passphrase', 'AutherState');
+    if (currentUserHash.isEmpty ||
+        !AutherAuth.isPlausibleHash(currentUserHash)) {
+      logger.info(
+          'userHash is invalid/empty, attempting recovery from passphrase',
+          'AutherState');
 
       // Re-derive the hash from the passphrase
       final derivedResult = await _passphraseService.setPassphrase(passphrase);
@@ -306,12 +341,21 @@ class AutherState extends ChangeNotifier {
         _personRepository.userHash = newHash;
         final persistResult = await _personRepository.persist();
         persistResult.when(
-          success: (_) => logger.info('userHash recovered successfully', 'AutherState'),
-          failure: (msg, _) => logger.error('Failed to persist recovered userHash: $msg', null, null, 'AutherState'),
+          success: (_) =>
+              logger.info('userHash recovered successfully', 'AutherState'),
+          failure: (msg, _) => logger.error(
+              'Failed to persist recovered userHash: $msg',
+              null,
+              null,
+              'AutherState'),
         );
         notifyListeners();
       } else {
-        logger.error('Failed to re-derive hash during recovery: ${derivedResult.errorOrNull}', null, null, 'AutherState');
+        logger.error(
+            'Failed to re-derive hash during recovery: ${derivedResult.errorOrNull}',
+            null,
+            null,
+            'AutherState');
       }
     }
 
@@ -326,7 +370,8 @@ class AutherState extends ChangeNotifier {
     final result = await _personRepository.loadFromFile(file, hash);
     result.when(
       success: (_) => notifyListeners(),
-      failure: (msg, _) => logger.warn('Failed to load from file: $msg', 'AutherState'),
+      failure: (msg, _) =>
+          logger.warn('Failed to load from file: $msg', 'AutherState'),
     );
   }
 
@@ -340,7 +385,8 @@ class AutherState extends ChangeNotifier {
     final result = await _personRepository.persist();
     result.when(
       success: (_) {},
-      failure: (msg, _) => logger.error('Failed to persist during update: $msg', null, null, 'AutherState'),
+      failure: (msg, _) => logger.error(
+          'Failed to persist during update: $msg', null, null, 'AutherState'),
     );
     notifyListeners();
   }
@@ -352,7 +398,15 @@ class AutherState extends ChangeNotifier {
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      onAppResumed();
+    }
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _tickerSub?.cancel();
     _ticker.dispose();
     searchController.dispose();
