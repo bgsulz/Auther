@@ -52,6 +52,10 @@ class AuthTicker {
     _seedController.add(seed);
   }
 
+  void restart() {
+    start();
+  }
+
   void dispose() {
     if (_isDisposed) return;
     _isDisposed = true;

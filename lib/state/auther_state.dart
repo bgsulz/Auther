@@ -302,6 +302,10 @@ class AutherState extends ChangeNotifier {
 
   void notifyManual() => notifyListeners();
 
+  void onAppResumed() {
+    _ticker.restart();
+  }
+
   @override
   void dispose() {
     _tickerSub?.cancel();
