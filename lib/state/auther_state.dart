@@ -152,8 +152,18 @@ class AutherState extends ChangeNotifier {
   Future<void> _init() async {
     try {
       final hashResult = await _passphraseService.getStoredHash();
+      if (hashResult.isFailure) {
+        logger.warn('getStoredHash failed: ${hashResult.errorOrNull}', 'AutherState');
+      }
       final hash = hashResult.valueOr('');
-      await _personRepository.load(hash);
+      if (hash.isEmpty) {
+        logger.info('getStoredHash returned empty (new user or storage issue)', 'AutherState');
+      }
+      final loadResult = await _personRepository.load(hash);
+      if (loadResult.isFailure) {
+        logger.error('PersonRepository.load failed: ${loadResult.errorOrNull}', null, null, 'AutherState');
+      }
+      logger.info('Initialization complete: userHash=${_personRepository.userHash.isEmpty ? "(empty)" : "present (${_personRepository.userHash.length} chars)"}', 'AutherState');
     } catch (e) {
       logger.error('Failed to initialize state', e, null, 'AutherState');
     }
@@ -271,6 +281,41 @@ class AutherState extends ChangeNotifier {
   Future<bool> validatePassphrase(String passphrase) async {
     final result = await _passphraseService.validatePassphrase(passphrase);
     return result.valueOr(false);
+  }
+
+  /// Validates passphrase and recovers userHash if it was lost due to Keystore issues.
+  /// This should be called during login to transparently fix the "empty QR" bug.
+  /// Returns true if passphrase is valid (regardless of whether recovery was needed).
+  Future<bool> validateAndRecoverPassphrase(String passphrase) async {
+    final result = await _passphraseService.validatePassphrase(passphrase);
+    final isValid = result.valueOr(false);
+
+    if (!isValid) {
+      return false;
+    }
+
+    // Check if userHash needs recovery
+    final currentUserHash = _personRepository.userHash;
+    if (currentUserHash.isEmpty || !AutherAuth.isPlausibleHash(currentUserHash)) {
+      logger.info('userHash is invalid/empty, attempting recovery from passphrase', 'AutherState');
+
+      // Re-derive the hash from the passphrase
+      final derivedResult = await _passphraseService.setPassphrase(passphrase);
+      if (derivedResult.isSuccess) {
+        final newHash = derivedResult.valueOrNull!;
+        _personRepository.userHash = newHash;
+        final persistResult = await _personRepository.persist();
+        persistResult.when(
+          success: (_) => logger.info('userHash recovered successfully', 'AutherState'),
+          failure: (msg, _) => logger.error('Failed to persist recovered userHash: $msg', null, null, 'AutherState'),
+        );
+        notifyListeners();
+      } else {
+        logger.error('Failed to re-derive hash during recovery: ${derivedResult.errorOrNull}', null, null, 'AutherState');
+      }
+    }
+
+    return true;
   }
 
   // --- Data Operations ---

@@ -1,4 +1,5 @@
 import 'package:auther/customization/style.dart';
+import 'package:auther/services/auth_service.dart';
 import 'package:auther/services/logger.dart';
 
 import 'settings_screen.dart';
@@ -214,6 +215,13 @@ class _LoginFormState extends State<LoginForm> {
     logger.info('[Biometric] Authentication result: $success', 'LoginForm');
     if (!mounted) return;
     if (success) {
+      // Check if userHash needs recovery (Keystore corruption scenario)
+      final userHash = appState.userHash;
+      if (userHash.isEmpty || !AutherAuth.isPlausibleHash(userHash)) {
+        logger.info('[Biometric] userHash invalid, requiring passphrase for recovery', 'LoginForm');
+        setState(() => _showPassphraseForm = true);
+        return;
+      }
       Navigator.pushReplacementNamed(context, "/codes");
     } else {
       logger.info('[Biometric] Showing passphrase form (auth failed or cancelled)', 'LoginForm');
@@ -265,7 +273,7 @@ class _LoginFormState extends State<LoginForm> {
 
   void _onFieldSubmitted(BuildContext context, AutherState appState, String value) async {
     if (!_formKey.currentState!.validate()) return;
-    final ok = await appState.validatePassphrase(value);
+    final ok = await appState.validateAndRecoverPassphrase(value);
     if (!context.mounted) return;
     if (ok) {
       // Reset biometric timer if biometric was previously enabled

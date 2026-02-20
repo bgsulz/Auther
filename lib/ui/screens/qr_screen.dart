@@ -11,6 +11,40 @@ class QRCodePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final appData = Provider.of<AutherState>(context);
+    final userHash = appData.userHash;
+
+    // Validate userHash before generating QR
+    if (userHash.isEmpty || !AutherAuth.isPlausibleHash(userHash)) {
+      return Scaffold(
+        appBar: AppBar(
+          title: Text('Your code'),
+        ),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.error_outline, size: 64, color: Colors.red),
+                const SizedBox(height: 16),
+                Text(
+                  'Unable to generate QR code',
+                  style: Theme.of(context).textTheme.titleLarge,
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Your identity hash could not be loaded. Please try restarting the app.',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     final seedMs = appData.seed != 0 ? appData.seed : DateTime.now().millisecondsSinceEpoch;
     final slot = AutherAuth.currentSlot(seedMs);
     return Scaffold(
@@ -26,7 +60,7 @@ class QRCodePage extends StatelessWidget {
               ClipRRect(
                 borderRadius: BorderRadius.circular(16),
                 child: QrImageView(
-                  data: AutherAuth.qrEncode(appData.userHash, slot),
+                  data: AutherAuth.qrEncode(userHash, slot),
                   version: QrVersions.auto,
                   backgroundColor: Colors.white,
                   eyeStyle: QrEyeStyle(eyeShape: QrEyeShape.square, color: Colors.black),
