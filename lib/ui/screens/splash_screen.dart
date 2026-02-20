@@ -53,7 +53,7 @@ class IntroPage extends StatelessWidget {
                 alignment: Alignment.centerRight,
                 child: ElevatedButton(
                   onPressed: () {
-                    Navigator.pushNamed(context, "/login");
+                    Navigator.pushReplacementNamed(context, "/login");
                   },
                   child: Text("Next"),
                 ),
