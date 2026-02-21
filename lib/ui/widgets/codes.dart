@@ -12,6 +12,17 @@ class CodeListPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final appState = Provider.of<AutherState>(context);
+    final userHash = appState.userHash;
+    if (userHash.isEmpty || !AutherAuth.isPlausibleHash(userHash)) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (context.mounted) {
+          Navigator.pushReplacementNamed(context, '/login');
+        }
+      });
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
 
     return Scaffold(
       floatingActionButton: _buildFab(context),

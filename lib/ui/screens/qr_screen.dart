@@ -34,7 +34,7 @@ class QRCodePage extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Your identity hash could not be loaded. Please try restarting the app.',
+                  'Your secure identity is unavailable. Return to login and set a new passphrase.',
                   style: Theme.of(context).textTheme.bodyMedium,
                   textAlign: TextAlign.center,
                 ),

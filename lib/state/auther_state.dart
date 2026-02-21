@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:auther/models/person.dart';
+import 'package:auther/models/result.dart';
 import 'package:auther/repositories/person_repository.dart';
 import 'package:auther/repositories/secure_storage_repository.dart';
 import 'package:auther/services/auth_service.dart';
@@ -32,6 +33,7 @@ class AutherState extends ChangeNotifier with WidgetsBindingObserver {
 
   ThemeMode _themeMode = ThemeMode.system;
   static const _themeModeKey = 'theme_mode';
+  String? _signupNotice;
 
   // Biometric authentication
   final BiometricService _biometricService = BiometricService();
@@ -95,6 +97,7 @@ class AutherState extends ChangeNotifier with WidgetsBindingObserver {
 
   /// Current theme mode
   ThemeMode get themeMode => _themeMode;
+  String? get signupNotice => _signupNotice;
 
   /// Whether biometric authentication is enabled
   bool get biometricEnabled => _biometricEnabled;
@@ -177,6 +180,14 @@ class AutherState extends ChangeNotifier with WidgetsBindingObserver {
       if (loadResult.isFailure) {
         logger.error('PersonRepository.load failed: ${loadResult.errorOrNull}',
             null, null, 'AutherState');
+      }
+      final hashIsPlausible = AutherAuth.isPlausibleHash(hash);
+      final hasExistingPeople = _personRepository.people.isNotEmpty;
+      if ((!hashIsPlausible && hash.isNotEmpty) ||
+          (hash.isEmpty && hasExistingPeople)) {
+        await _resetIdentityForFreshStart(
+          'Security data was unavailable. Create a new passphrase to continue.',
+        );
       }
       logger.info(
           'Initialization complete: userHash=${_personRepository.userHash.isEmpty ? "(empty)" : "present (${_personRepository.userHash.length} chars)"}',
@@ -290,15 +301,20 @@ class AutherState extends ChangeNotifier with WidgetsBindingObserver {
 
   // --- Passphrase Operations ---
 
-  Future<void> setPassphrase(String passphrase) async {
+  Future<Result<void>> setPassphrase(String passphrase) async {
     final result = await _passphraseService.setPassphrase(passphrase);
     if (result.isFailure) {
       logger.error('Failed to set passphrase: ${result.errorOrNull}', null,
           null, 'AutherState');
-      return;
+      return Failure(result.errorOrNull ?? 'Failed to set passphrase');
     }
     _personRepository.userHash = result.valueOrNull!;
     final persistResult = await _personRepository.persist();
+    if (persistResult.isFailure) {
+      return Failure(
+          persistResult.errorOrNull ??
+              'Failed to persist data after setting passphrase');
+    }
     persistResult.when(
       success: (_) {},
       failure: (msg, _) => logger.error(
@@ -307,7 +323,9 @@ class AutherState extends ChangeNotifier with WidgetsBindingObserver {
           null,
           'AutherState'),
     );
+    _signupNotice = null;
     notifyListeners();
+    return const Success(null);
   }
 
   Future<bool> validatePassphrase(String passphrase) async {
@@ -315,51 +333,10 @@ class AutherState extends ChangeNotifier with WidgetsBindingObserver {
     return result.valueOr(false);
   }
 
-  /// Validates passphrase and recovers userHash if it was lost due to Keystore issues.
-  /// This should be called during login to transparently fix the "empty QR" bug.
-  /// Returns true if passphrase is valid (regardless of whether recovery was needed).
-  Future<bool> validateAndRecoverPassphrase(String passphrase) async {
-    final result = await _passphraseService.validatePassphrase(passphrase);
-    final isValid = result.valueOr(false);
-
-    if (!isValid) {
-      return false;
-    }
-
-    // Check if userHash needs recovery
-    final currentUserHash = _personRepository.userHash;
-    if (currentUserHash.isEmpty ||
-        !AutherAuth.isPlausibleHash(currentUserHash)) {
-      logger.info(
-          'userHash is invalid/empty, attempting recovery from passphrase',
-          'AutherState');
-
-      // Re-derive the hash from the passphrase
-      final derivedResult = await _passphraseService.setPassphrase(passphrase);
-      if (derivedResult.isSuccess) {
-        final newHash = derivedResult.valueOrNull!;
-        _personRepository.userHash = newHash;
-        final persistResult = await _personRepository.persist();
-        persistResult.when(
-          success: (_) =>
-              logger.info('userHash recovered successfully', 'AutherState'),
-          failure: (msg, _) => logger.error(
-              'Failed to persist recovered userHash: $msg',
-              null,
-              null,
-              'AutherState'),
-        );
-        notifyListeners();
-      } else {
-        logger.error(
-            'Failed to re-derive hash during recovery: ${derivedResult.errorOrNull}',
-            null,
-            null,
-            'AutherState');
-      }
-    }
-
-    return true;
+  Future<void> markIdentityUnavailable() async {
+    await _resetIdentityForFreshStart(
+      'Security data was unavailable. Create a new passphrase to continue.',
+    );
   }
 
   // --- Data Operations ---
@@ -376,9 +353,7 @@ class AutherState extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   Future<void> resetAll() async {
-    await _passphraseService.deletePassphrase();
-    await _personRepository.clearAll();
-    notifyListeners();
+    await _resetIdentityForFreshStart(null);
   }
 
   Future<void> update() async {
@@ -411,5 +386,21 @@ class AutherState extends ChangeNotifier with WidgetsBindingObserver {
     _ticker.dispose();
     searchController.dispose();
     super.dispose();
+  }
+
+  Future<void> _resetIdentityForFreshStart(String? notice) async {
+    final deleteResult = await _passphraseService.deletePassphrase();
+    if (deleteResult.isFailure) {
+      logger.warn(
+          'Failed to clear secure storage: ${deleteResult.errorOrNull}',
+          'AutherState');
+    }
+    final clearResult = await _personRepository.clearAll();
+    if (clearResult.isFailure) {
+      logger.warn('Failed to clear local data: ${clearResult.errorOrNull}',
+          'AutherState');
+    }
+    _signupNotice = notice;
+    notifyListeners();
   }
 }

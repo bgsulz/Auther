@@ -60,8 +60,8 @@ class PassphraseService {
       final isValid = AutherAuth.verifyPassphrase(passphrase, rec);
       return Success(isValid);
     } catch (_) {
-      // Legacy format fallback removed per plan - just return false
-      logger.warn('Legacy passphrase format encountered', 'PassphraseService');
+      logger.warn(
+          'Invalid passphrase record in secure storage', 'PassphraseService');
       return const Success(false);
     }
   }
@@ -87,8 +87,8 @@ class PassphraseService {
       final hash = rec['derivedKeyHex'] as String? ?? '';
       return Success(hash);
     } catch (_) {
-      // Legacy format - return as-is (will fail validation anyway)
-      return Success(stored);
+      logger.warn('Invalid stored hash format', 'PassphraseService');
+      return const Success('');
     }
   }
 

@@ -26,7 +26,10 @@ class LoginPage extends StatelessWidget {
               SizedBox(height: 16),
               Consumer<AutherState>(
                 builder: (context, appState, child) {
-                  return appState.userHash.isEmpty ? SignupForm() : LoginForm();
+                  final hash = appState.userHash;
+                  final canLogin =
+                      hash.isNotEmpty && AutherAuth.isPlausibleHash(hash);
+                  return canLogin ? LoginForm() : SignupForm();
                 },
               ),
             ],
@@ -63,9 +66,27 @@ class _SignupFormState extends State<SignupForm> {
 
   @override
   Widget build(BuildContext context) {
+    final appState = Provider.of<AutherState>(context);
+    final signupNotice = appState.signupNotice;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        if (signupNotice != null) ...[
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.errorContainer,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              signupNotice,
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+          ),
+          SizedBox(height: 16),
+        ],
         Text(Config.passphraseEnter,
             style: Theme.of(context).textTheme.titleLarge),
         SizedBox(height: 8),
@@ -107,9 +128,17 @@ class _SignupFormState extends State<SignupForm> {
 
     if (_formKey.currentState!.validate()) {
       () async {
-        await appState.setPassphrase(_controllerFirst.text);
-        if (context.mounted) {
+        final result = await appState.setPassphrase(_controllerFirst.text);
+        if (!context.mounted) return;
+        if (result.isSuccess) {
           Navigator.pushReplacementNamed(context, "/codes");
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(result.errorOrNull ??
+                  'Failed to set passphrase on this device'),
+            ),
+          );
         }
       }();
     }
@@ -215,11 +244,10 @@ class _LoginFormState extends State<LoginForm> {
     logger.info('[Biometric] Authentication result: $success', 'LoginForm');
     if (!mounted) return;
     if (success) {
-      // Check if userHash needs recovery (Keystore corruption scenario)
       final userHash = appState.userHash;
       if (userHash.isEmpty || !AutherAuth.isPlausibleHash(userHash)) {
-        logger.info('[Biometric] userHash invalid, requiring passphrase for recovery', 'LoginForm');
-        setState(() => _showPassphraseForm = true);
+        logger.info('[Biometric] userHash invalid after biometric auth, forcing fresh start', 'LoginForm');
+        await appState.markIdentityUnavailable();
         return;
       }
       Navigator.pushReplacementNamed(context, "/codes");
@@ -273,7 +301,7 @@ class _LoginFormState extends State<LoginForm> {
 
   void _onFieldSubmitted(BuildContext context, AutherState appState, String value) async {
     if (!_formKey.currentState!.validate()) return;
-    final ok = await appState.validateAndRecoverPassphrase(value);
+    final ok = await appState.validatePassphrase(value);
     if (!context.mounted) return;
     if (ok) {
       // Reset biometric timer if biometric was previously enabled
