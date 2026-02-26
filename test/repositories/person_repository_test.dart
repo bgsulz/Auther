@@ -108,7 +108,8 @@ void main() {
         final result = await repository.removePersonAt(0);
         expect(result, isA<Success<void>>());
         expect(repository.people.length, 1);
-        expect(repository.people.first.name, 'Jane');
+        // addPerson sorts by name, so index 0 is Jane and John remains.
+        expect(repository.people.first.name, 'John');
       });
 
       test('fails for negative index', () async {
