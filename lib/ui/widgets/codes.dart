@@ -50,41 +50,73 @@ class CodeListPage extends StatelessWidget {
   }
 
   Widget _buildList(BuildContext context, AutherState appState) {
+    final searchText = appState.searchController.text.trim();
+    final isFiltering = searchText.isNotEmpty;
+
+    if (isFiltering) {
+      return SliverList(
+        delegate: SliverChildBuilderDelegate(
+          (context, index) => _buildDismissiblePersonCard(
+            context,
+            appState,
+            appState.visibleCodes[index],
+            index,
+            showDragHandle: false,
+          ),
+          childCount: appState.visibleCodes.length,
+        ),
+      );
+    }
+
     return SliverReorderableList(
-      itemBuilder: (context, index) {
-        final person = appState.visibleCodes[index];
-        return Dismissible(
-          key: ValueKey(person.personHash),
-          direction: DismissDirection.endToStart,
-          confirmDismiss: (direction) async {
-            return await _showConfirmDeletionDialog(context, appState, person);
-          },
-          onDismissed: (dir) {
-            var state = Provider.of<AutherState>(context, listen: false);
-            state.removePerson(person);
-          },
-          background: const SizedBox.shrink(),
-          secondaryBackground: Container(
-            alignment: Alignment.centerRight,
-            padding: const EdgeInsets.only(right: 16),
-            color: Colors.red,
-            child: const Icon(
-              Icons.delete,
-              color: Colors.white,
-            ),
-          ),
-          child: PersonCard(
-            person: person,
-            seed: appState.seed,
-            userHash: appState.userHash,
-            index: index,
-          ),
-        );
-      },
+      itemBuilder: (context, index) => _buildDismissiblePersonCard(
+        context,
+        appState,
+        appState.visibleCodes[index],
+        index,
+        showDragHandle: true,
+      ),
       itemCount: appState.visibleCodes.length,
       onReorder: (int oldIndex, int newIndex) {
         appState.reorderPerson(oldIndex, newIndex);
       },
+    );
+  }
+
+  Widget _buildDismissiblePersonCard(
+    BuildContext context,
+    AutherState appState,
+    Person person,
+    int index, {
+    required bool showDragHandle,
+  }) {
+    return Dismissible(
+      key: ValueKey(person.personHash),
+      direction: DismissDirection.endToStart,
+      confirmDismiss: (direction) async {
+        return await _showConfirmDeletionDialog(context, appState, person);
+      },
+      onDismissed: (dir) {
+        var state = Provider.of<AutherState>(context, listen: false);
+        state.removePerson(person);
+      },
+      background: const SizedBox.shrink(),
+      secondaryBackground: Container(
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 16),
+        color: Colors.red,
+        child: const Icon(
+          Icons.delete,
+          color: Colors.white,
+        ),
+      ),
+      child: PersonCard(
+        person: person,
+        seed: appState.seed,
+        userHash: appState.userHash,
+        index: index,
+        showDragHandle: showDragHandle,
+      ),
     );
   }
 
@@ -124,12 +156,14 @@ class PersonCard extends StatelessWidget {
     required this.seed,
     required this.userHash,
     required this.index,
+    this.showDragHandle = true,
   });
 
   final Person person;
   final int seed;
   final String userHash;
   final int index;
+  final bool showDragHandle;
 
   Widget _buildAuthCode(BuildContext context, Person person, String userHash,
       int seed, bool isSaying) {
@@ -155,6 +189,7 @@ class PersonCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final leftInset = showDragHandle ? 64.0 : 16.0;
     return Card(
       clipBehavior: Clip.antiAlias,
       child: Stack(
@@ -174,7 +209,7 @@ class PersonCard extends StatelessWidget {
               });
             },
             child: Padding(
-              padding: const EdgeInsets.all(16).copyWith(left: 64),
+              padding: const EdgeInsets.all(16).copyWith(left: leftInset),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -218,23 +253,24 @@ class PersonCard extends StatelessWidget {
               ),
             ),
           ),
-          Positioned(
-            top: 0,
-            bottom: 0,
-            left: 0,
-            child: ReorderableDragStartListener(
-              index: index,
-              child: Container(
-                width: 64,
-                color: Colors.transparent,
-                child: Padding(
-                  padding: EdgeInsets.all(16),
-                  child: Icon(Icons.drag_indicator,
-                      color: Theme.of(context).colorScheme.surfaceBright),
+          if (showDragHandle)
+            Positioned(
+              top: 0,
+              bottom: 0,
+              left: 0,
+              child: ReorderableDragStartListener(
+                index: index,
+                child: Container(
+                  width: 64,
+                  color: Colors.transparent,
+                  child: Padding(
+                    padding: EdgeInsets.all(16),
+                    child: Icon(Icons.drag_indicator,
+                        color: Theme.of(context).colorScheme.surfaceBright),
+                  ),
                 ),
               ),
             ),
-          ),
         ],
       ),
     );
