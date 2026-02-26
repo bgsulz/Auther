@@ -341,8 +341,14 @@ class AutherState extends ChangeNotifier with WidgetsBindingObserver {
 
   // --- Data Operations ---
 
-  Future<void> loadFromFile(File file) async {
+  Future<Result<void>> loadFromFile(File file) async {
     final hashResult = await _passphraseService.getStoredHash();
+    if (hashResult.isFailure) {
+      logger.warn('Failed to read secure storage during import: '
+          '${hashResult.errorOrNull}', 'AutherState');
+      return const Failure(
+          'Could not access secure data on this device. Please try again.');
+    }
     final hash = hashResult.valueOr('');
     final result = await _personRepository.loadFromFile(file, hash);
     result.when(
@@ -350,6 +356,11 @@ class AutherState extends ChangeNotifier with WidgetsBindingObserver {
       failure: (msg, _) =>
           logger.warn('Failed to load from file: $msg', 'AutherState'),
     );
+    if (result.isFailure) {
+      return const Failure(
+          'Could not import that file. Make sure it is a valid Auther backup.');
+    }
+    return const Success(null);
   }
 
   Future<void> resetAll() async {

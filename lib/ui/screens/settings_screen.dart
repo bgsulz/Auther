@@ -249,12 +249,20 @@ class Settings {
           return;
         }
         File file = File(filePath);
-        await appState.loadFromFile(file);
+        final importResult = await appState.loadFromFile(file);
         if (context.mounted) {
-          Navigator.of(context).pushReplacementNamed('/codes');
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Auther data successfully imported!')),
-          );
+          if (importResult.isSuccess) {
+            Navigator.of(context).pushReplacementNamed('/codes');
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Auther data successfully imported!')),
+            );
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(_friendlyImportError(importResult.errorOrNull)),
+              ),
+            );
+          }
         }
       } else if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -268,6 +276,20 @@ class Settings {
         );
       }
     }
+  }
+
+  static String _friendlyImportError(String? message) {
+    if (message == null || message.isEmpty) {
+      return 'Could not import that file. Please try again.';
+    }
+    final lower = message.toLowerCase();
+    if (lower.contains('valid auther backup')) {
+      return 'That file does not look like a valid Auther backup.';
+    }
+    if (lower.contains('secure data')) {
+      return 'Could not access secure data on this device. Please try again.';
+    }
+    return 'Could not import that file. Please try again.';
   }
 
   static void simulateScan(BuildContext context) {
