@@ -12,21 +12,13 @@ import 'auther_repository.dart';
 class PersonRepository {
   final AutherRepository _dataRepository;
   List<Person> _people = [];
-  String _userHash = '';
+  String userHash = '';
 
   PersonRepository({required AutherRepository dataRepository})
       : _dataRepository = dataRepository;
 
   /// Current list of people (read-only view)
   List<Person> get people => List.unmodifiable(_people);
-
-  /// Current user hash
-  String get userHash => _userHash;
-
-  /// Sets the user hash
-  set userHash(String hash) {
-    _userHash = hash;
-  }
 
   /// Loads data from storage with the given user hash.
   Future<Result<void>> load(String hash) async {
@@ -35,13 +27,13 @@ class PersonRepository {
       final Map<String, dynamic> json = jsonDecode(content ?? '{}');
       final data = AutherData.fromJson(json, hash);
       _people = data.codes;
-      _userHash = data.userHash;
+      userHash = data.userHash;
       logger.info('Loaded ${_people.length} people', 'PersonRepository');
       return const Success(null);
     } catch (e) {
       logger.error('Failed to load people', e, null, 'PersonRepository');
       _people = [];
-      _userHash = '';
+      userHash = '';
       return Failure('Failed to load data', e);
     }
   }
@@ -53,7 +45,7 @@ class PersonRepository {
       final Map<String, dynamic> json = jsonDecode(str.isEmpty ? '{}' : str);
       final data = AutherData.fromJson(json, hash);
       _people = data.codes;
-      _userHash = data.userHash;
+      userHash = data.userHash;
       await _persist();
       logger.info('Imported ${_people.length} people from file', 'PersonRepository');
       return const Success(null);
@@ -173,7 +165,7 @@ class PersonRepository {
   /// Clears all people.
   Future<Result<void>> clearAll() async {
     _people.clear();
-    _userHash = '';
+    userHash = '';
     try {
       await _dataRepository.deleteAll();
       logger.info('Cleared all data', 'PersonRepository');
@@ -186,14 +178,14 @@ class PersonRepository {
 
   /// Returns the data as a JSON string (for export).
   String toJsonString() {
-    final data = AutherData(codes: _people)..userHash = _userHash;
+    final data = AutherData(codes: _people)..userHash = userHash;
     return data.toJsonString();
   }
 
   /// Persists current state to storage.
   Future<Result<void>> _persist() async {
     try {
-      final data = AutherData(codes: _people)..userHash = _userHash;
+      final data = AutherData(codes: _people)..userHash = userHash;
       await _dataRepository.saveData(data.toJsonString());
       return const Success(null);
     } catch (e) {

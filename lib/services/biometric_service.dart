@@ -35,13 +35,11 @@ class BiometricService {
     try {
       final result = await _auth.authenticate(
         localizedReason: 'Authenticate to unlock Auther',
-        options: const AuthenticationOptions(
-          // For login, avoid sticky auth retries across lifecycle transitions.
-          // On some Android devices this can lead to a false failure result
-          // even after a successful biometric scan.
-          stickyAuth: false,
-          biometricOnly: true,
-        ),
+        biometricOnly: true,
+        // For login, avoid sticky auth retries across lifecycle transitions.
+        // On some Android devices this can lead to a false failure result
+        // even after a successful biometric scan.
+        persistAcrossBackgrounding: false,
       );
       logger.info('[Biometric] authenticate result=$result', 'BiometricService');
       return result;

@@ -108,7 +108,7 @@ class _CodeScanPageState extends State<CodeScanPage> {
         children: [
           MobileScanner(
             onDetect: _handleBarcode,
-            errorBuilder: (context, error, child) {
+            errorBuilder: (context, error) {
               return Center(
                 child: Padding(
                   padding: const EdgeInsets.all(32),
