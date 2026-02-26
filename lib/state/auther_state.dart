@@ -239,43 +239,47 @@ class AutherState extends ChangeNotifier with WidgetsBindingObserver {
 
   // --- Person Operations ---
 
-  Future<void> addPerson(Person person) async {
+  Future<Result<void>> addPerson(Person person) async {
     final result = await _personRepository.addPerson(person);
     result.when(
       success: (_) => notifyListeners(),
       failure: (msg, _) =>
           logger.warn('Failed to add person: $msg', 'AutherState'),
     );
+    return result;
   }
 
-  Future<void> removePersonAt(int index) async {
+  Future<Result<void>> removePersonAt(int index) async {
     final result = await _personRepository.removePersonAt(index);
     result.when(
       success: (_) => notifyListeners(),
       failure: (msg, _) =>
           logger.warn('Failed to remove person: $msg', 'AutherState'),
     );
+    return result;
   }
 
-  Future<void> removePerson(Person person) async {
+  Future<Result<void>> removePerson(Person person) async {
     final result = await _personRepository.removePerson(person.personHash);
     result.when(
       success: (_) => notifyListeners(),
       failure: (msg, _) =>
           logger.warn('Failed to remove person: $msg', 'AutherState'),
     );
+    return result;
   }
 
-  Future<void> reorderPerson(int oldIndex, int newIndex) async {
+  Future<Result<void>> reorderPerson(int oldIndex, int newIndex) async {
     final result = await _personRepository.reorderPerson(oldIndex, newIndex);
     result.when(
       success: (_) => notifyListeners(),
       failure: (msg, _) =>
           logger.warn('Failed to reorder person: $msg', 'AutherState'),
     );
+    return result;
   }
 
-  Future<void> editPersonName(Person person, String text) async {
+  Future<Result<void>> editPersonName(Person person, String text) async {
     final result =
         await _personRepository.editPersonName(person.personHash, text);
     result.when(
@@ -283,6 +287,7 @@ class AutherState extends ChangeNotifier with WidgetsBindingObserver {
       failure: (msg, _) =>
           logger.warn('Failed to edit person name: $msg', 'AutherState'),
     );
+    return result;
   }
 
   bool checkEmergency(Person person, String passphrase) {
@@ -333,8 +338,8 @@ class AutherState extends ChangeNotifier with WidgetsBindingObserver {
     return result.valueOr(false);
   }
 
-  Future<void> markIdentityUnavailable() async {
-    await _resetIdentityForFreshStart(
+  Future<Result<void>> markIdentityUnavailable() async {
+    return _resetIdentityForFreshStart(
       'Security data was unavailable. Create a new passphrase to continue.',
     );
   }
@@ -363,8 +368,8 @@ class AutherState extends ChangeNotifier with WidgetsBindingObserver {
     return const Success(null);
   }
 
-  Future<void> resetAll() async {
-    await _resetIdentityForFreshStart(null);
+  Future<Result<void>> resetAll() async {
+    return _resetIdentityForFreshStart(null);
   }
 
   Future<void> update() async {
@@ -399,19 +404,27 @@ class AutherState extends ChangeNotifier with WidgetsBindingObserver {
     super.dispose();
   }
 
-  Future<void> _resetIdentityForFreshStart(String? notice) async {
+  Future<Result<void>> _resetIdentityForFreshStart(String? notice) async {
+    var hadFailure = false;
     final deleteResult = await _passphraseService.deletePassphrase();
     if (deleteResult.isFailure) {
+      hadFailure = true;
       logger.warn(
           'Failed to clear secure storage: ${deleteResult.errorOrNull}',
           'AutherState');
     }
     final clearResult = await _personRepository.clearAll();
     if (clearResult.isFailure) {
+      hadFailure = true;
       logger.warn('Failed to clear local data: ${clearResult.errorOrNull}',
           'AutherState');
     }
     _signupNotice = notice;
     notifyListeners();
+    if (hadFailure) {
+      return const Failure(
+          'Could not fully clear app data. Please try again.');
+    }
+    return const Success(null);
   }
 }

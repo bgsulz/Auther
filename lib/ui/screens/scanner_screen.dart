@@ -135,11 +135,33 @@ class _CodeScanPageState extends State<CodeScanPage> {
     ErrorSnackbar.showError(context, message);
   }
 
-  void _savePerson(String hash, String name) {
+  Future<void> _savePerson(String hash, String name) async {
     final appState = Provider.of<AutherState>(context, listen: false);
-    appState.addPerson(Person(name: name, personHash: hash));
+    final result = await appState.addPerson(Person(name: name, personHash: hash));
+    if (!mounted) return;
+    if (result.isFailure) {
+      ErrorSnackbar.showError(context, _friendlyAddPersonError(result.errorOrNull));
+      return;
+    }
     Navigator.pop(context); // Close bottom sheet
     Navigator.pop(context); // Go back to codes
+  }
+
+  String _friendlyAddPersonError(String? message) {
+    if (message == null || message.isEmpty) {
+      return 'Could not save this person right now. Please try again.';
+    }
+    final lower = message.toLowerCase();
+    if (lower.contains('already exists')) {
+      return 'This person is already in your list.';
+    }
+    if (lower.contains('invalid name')) {
+      return 'Please enter a valid name.';
+    }
+    if (lower.contains('invalid hash')) {
+      return 'This QR code is not valid.';
+    }
+    return 'Could not save this person right now. Please try again.';
   }
 }
 
@@ -148,7 +170,7 @@ class _CodeScanPageState extends State<CodeScanPage> {
 class _ConfirmSheetContent extends StatefulWidget {
   final String hash;
   final int slot;
-  final void Function(String hash, String name) onSave;
+  final Future<void> Function(String hash, String name) onSave;
 
   const _ConfirmSheetContent({
     required this.hash,
@@ -170,12 +192,13 @@ class _ConfirmSheetContentState extends State<_ConfirmSheetContent> {
     super.dispose();
   }
 
-  void _validateAndSave() {
+  Future<void> _validateAndSave() async {
     final result = Validators.validatePersonName(_nameController.text);
-    result.when(
-      success: (trimmedName) => widget.onSave(widget.hash, trimmedName),
-      failure: (msg, _) => ErrorSnackbar.showError(context, msg),
-    );
+    if (result.isFailure) {
+      ErrorSnackbar.showError(context, result.errorOrNull ?? 'Invalid name');
+      return;
+    }
+    await widget.onSave(widget.hash, result.valueOrNull!);
   }
 
   @override
@@ -237,13 +260,13 @@ class _ConfirmSheetContentState extends State<_ConfirmSheetContent> {
                 ),
                 controller: _nameController,
                 autofocus: true,
-                onFieldSubmitted: (_) => _validateAndSave(),
+                onFieldSubmitted: (_) async => await _validateAndSave(),
               ),
               const SizedBox(height: 12),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: _validateAndSave,
+                  onPressed: () async => await _validateAndSave(),
                   child: const Text('Save'),
                 ),
               ),

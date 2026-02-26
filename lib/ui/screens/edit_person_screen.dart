@@ -108,10 +108,20 @@ class _EditPersonScreenState extends State<EditPersonScreen> {
                 foregroundColor: Theme.of(context).colorScheme.onError,
               ),
               onPressed: () async {
-                final confirm = await _confirmDelete(context, personArg);
+                final confirm = await _confirmDelete(personArg);
                 if (confirm) {
-                  appState.removePerson(personArg);
-                  if (context.mounted) Navigator.of(context).pop();
+                  final removeResult = await appState.removePerson(personArg);
+                  if (!context.mounted) return;
+                  if (removeResult.isFailure) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                            _friendlyRemoveError(removeResult.errorOrNull)),
+                      ),
+                    );
+                    return;
+                  }
+                  Navigator.of(context).pop();
                 }
               },
               child: const Text('Delete this person\'s code'),
@@ -132,7 +142,7 @@ class _EditPersonScreenState extends State<EditPersonScreen> {
                 Expanded(
                   child: ElevatedButton(
                     onPressed: () {
-                      _onSave(context, appState, person);
+                      _onSave(appState, person);
                     },
                     child: const Text('Save'),
                   ),
@@ -201,12 +211,20 @@ class _EditPersonScreenState extends State<EditPersonScreen> {
     );
   }
 
-  Future<void> _onSave(
-      BuildContext context, AutherState appState, Person person) async {
+  Future<void> _onSave(AutherState appState, Person person) async {
     final newName = _nameController.text;
     final pass = _emergencyController.text;
 
-    appState.editPersonName(person, newName);
+    final editResult = await appState.editPersonName(person, newName);
+    if (!mounted) return;
+    if (editResult.isFailure) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(_friendlyEditError(editResult.errorOrNull)),
+        ),
+      );
+      return;
+    }
 
     if (!person.isBroken && pass.isNotEmpty) {
       final isValid = appState.checkEmergency(person, pass);
@@ -219,10 +237,35 @@ class _EditPersonScreenState extends State<EditPersonScreen> {
       }
     }
 
-    if (mounted) Navigator.of(context).pop();
+    Navigator.of(context).pop();
   }
 
-  Future<bool> _confirmDelete(BuildContext context, Person person) async {
+  String _friendlyEditError(String? message) {
+    if (message == null || message.isEmpty) {
+      return 'Could not save changes right now. Please try again.';
+    }
+    final lower = message.toLowerCase();
+    if (lower.contains('invalid name')) {
+      return 'Please enter a valid name.';
+    }
+    if (lower.contains('person not found')) {
+      return 'This person no longer exists in your list.';
+    }
+    return 'Could not save changes right now. Please try again.';
+  }
+
+  String _friendlyRemoveError(String? message) {
+    if (message == null || message.isEmpty) {
+      return 'Could not delete this person right now.';
+    }
+    final lower = message.toLowerCase();
+    if (lower.contains('person not found')) {
+      return 'This person is already gone from your list.';
+    }
+    return 'Could not delete this person right now.';
+  }
+
+  Future<bool> _confirmDelete(Person person) async {
     return (await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(

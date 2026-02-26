@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:auther/models/person.dart';
+import 'package:auther/models/result.dart';
 import 'package:file_picker/file_picker.dart';
 
 import '../../services/auth_service.dart';
@@ -99,11 +100,14 @@ class SettingsPage extends StatelessWidget {
     return ListTile(
       title: const Text('Add sample persons'),
       leading: Icon(Icons.person_add),
-      onTap: () {
-        Settings.addSamplePersons(context);
+      onTap: () async {
+        final result = await Settings.addSamplePersons(context);
+        if (!context.mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('Sample people added'),
+            content: Text(result.isSuccess
+                ? 'Sample people added'
+                : 'Could not add sample people right now'),
           ),
         );
       },
@@ -145,23 +149,36 @@ class SettingsPage extends StatelessWidget {
 class Settings {
   static void showResetModal(BuildContext context) {
     final appState = Provider.of<AutherState>(context, listen: false);
+    final parentContext = context;
 
     showDialog(
       context: context,
-      builder: (context) {
+      builder: (dialogContext) {
         return AlertDialog(
           title: Text('Forgot password'),
           content: Text(
               "Resetting your password will delete all of your codewords. Are you sure you want to do this?"),
           actions: [
             TextButton(
-              onPressed: () => Navigator.of(context).pop(),
+              onPressed: () => Navigator.of(dialogContext).pop(),
               child: Text('No'),
             ),
             TextButton(
-              onPressed: () {
-                appState.resetAll();
-                Navigator.of(context).pushReplacementNamed("/login");
+              onPressed: () async {
+                Navigator.of(dialogContext).pop();
+                final result = await appState.resetAll();
+                if (!parentContext.mounted) return;
+                if (result.isFailure) {
+                  ScaffoldMessenger.of(parentContext).showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                          'Could not fully clear your data. Please try again.'),
+                    ),
+                  );
+                  return;
+                }
+                Navigator.of(parentContext)
+                    .pushNamedAndRemoveUntil('/login', (_) => false);
               },
               child: Text('Yes'),
             ),
@@ -171,7 +188,7 @@ class Settings {
     );
   }
 
-  static void addSamplePersons(BuildContext context) {
+  static Future<Result<void>> addSamplePersons(BuildContext context) async {
     final appState = Provider.of<AutherState>(context, listen: false);
 
     var codes = [
@@ -188,12 +205,19 @@ class Settings {
     ];
 
     while (appState.codes.isNotEmpty) {
-      appState.removePersonAt(0);
+      final removeResult = await appState.removePersonAt(0);
+      if (removeResult.isFailure) {
+        return const Failure('Could not clear existing sample people');
+      }
     }
 
     for (var code in codes) {
-      appState.addPerson(code);
+      final addResult = await appState.addPerson(code);
+      if (addResult.isFailure) {
+        return const Failure('Could not add sample people');
+      }
     }
+    return const Success(null);
   }
 
   static String _generateTimecode() {
@@ -259,8 +283,8 @@ class Settings {
           } else {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text(_friendlyImportError(importResult.errorOrNull)),
-              ),
+                  content: Text(
+                      _friendlyImportError(importResult.errorOrNull))),
             );
           }
         }
